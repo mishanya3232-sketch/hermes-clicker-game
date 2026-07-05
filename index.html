@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clicker Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        #clicker { font-size: 2rem; padding: 20px 40px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        #score { font-size: 1.5rem; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Clicker Game</h1>
+    <button id="clicker">Click me!</button>
+    <div id="score">Score: 0</div>
+    <script>
+        let score = 0;
+        const button = document.getElementById('clicker');
+        const scoreDisplay = document.getElementById('score');
+        button.addEventListener('click', () => {
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+        });
+    </script>
+</body>
+</html>
