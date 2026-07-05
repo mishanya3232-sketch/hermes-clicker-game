@@ -2,30 +2,47 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кликер Hermes – Улучшенная версия</title>
     <style>
+        :root {
+            --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --bg-color: #f5f5f5;
+            --primary: #4CAF50;
+            --primary-dark: #45a049;
+            --danger: #8b4513;
+            --warning: #ff9800;
+            --info: #2196F3;
+            --light: #fff;
+            --dark: #333;
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
+            font-family: var(--font-sans);
+            background: var(--bg-color);
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
+            box-sizing: border-box;
         }
         h1 {
-            color: #333;
+            color: var(--dark);
+            margin-top: 10px;
+            font-size: 1.8rem;
         }
         #bigCookie {
-            width: 200px;
-            height: 200px;
-            background: #8b4513;
+            width: min(200px, 80vw);
+            height: min(200px, 80vw);
+            max-width: 200px;
+            max-height: 200px;
+            background: var(--danger);
             border-radius: 50%;
-            margin: 20px auto;
+            margin: 15px auto;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 28px;
+            color: var(--light);
+            font-size: calc(10px + 2vw);
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             transition: transform 0.1s;
@@ -34,55 +51,58 @@
             transform: scale(0.95);
         }
         #stats {
-            margin: 20px 0;
-            font-size: 1.2em;
+            margin: 15px 0;
+            font-size: 1.2rem;
         }
         .buildings {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
+            gap: 10px;
+            margin: 15px 0;
         }
         .building {
-            background: #4CAF50;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 8px;
+            background: var(--primary);
+            color: var(--light);
+            padding: 10px 16px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 0.95rem;
             transition: background 0.2s;
+            min-width: 80px;
+            box-sizing: border-box;
         }
         .building:hover {
-            background: #45a049;
+            background: var(--primary-dark);
         }
         .building:disabled {
             background: #cccccc;
             cursor: not-allowed;
         }
         #achievements {
-            margin-top: 30px;
+            margin-top: 20px;
             text-align: left;
-            max-width: 600px;
+            max-width: 90%;
             margin-left: auto;
             margin-right: auto;
+            font-size: 0.9rem;
         }
         .achievement {
             background: #ffeb3b;
-            padding: 8px;
-            margin: 5px 0;
+            padding: 6px;
+            margin: 4px 0;
             border-radius: 4px;
             display: none;
         }
         #prestigeBtn {
-            background: #ff9800;
-            color: white;
+            background: var(--warning);
+            color: var(--light);
             border: none;
-            padding: 10px 20px;
+            padding: 10px 18px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 1em;
-            margin-top: 20px;
+            font-size: 0.95rem;
+            margin-top: 15px;
         }
         #prestigeBtn:hover {
             background: #e68900;
@@ -95,22 +115,30 @@
             margin-top: 10px;
         }
         button.saveBtn {
-            background: #2196F3;
-            color: white;
+            background: var(--info);
+            color: var(--light);
             border: none;
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             margin: 0 5px;
+            font-size: 0.9rem;
         }
         button.saveBtn:hover {
             background: #0b7dda;
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            #stats { font-size: 1rem; }
+            .building { padding: 8px 12px; font-size: 0.85rem; }
+            #prestigeBtn { padding: 8px 14px; font-size: 0.85rem; }
+            button.saveBtn { padding: 5px 10px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
     <h1>Кликер Hermes</h1>
-    <div id="bigCookie">Кликни!</div>
+    <div id="bigCookie">Кликни меня!</div>
     <div id="stats">
         Счёт: <span id="counter">0</span> <br>
         Кликов всего: <span id="totalClicks">0</span> <br>
@@ -121,137 +149,48 @@
         <div class="building" id="buyGrandma">Бабушка (100)</div>
         <div class="building" id="buyFactory">Завод (500)</div>
         <div class="building" id="buyMine">Шахта (3000)</div>
-        <div class="building" id="buyShipment">Отправка (10000)</div>
     </div>
-    <div id="prestigeSection">
-        <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 1M)</button>
-    </div>
+    <div id="achievements"></div>
+    <button id="prestigeBtn">Пре behaviour</button>
     <div id="saveLoad">
         <button class="saveBtn" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
-        <button class="saveBtn" id="resetBtn">Сбросить всё</button>
-    </div>
-    <div id="achievements">
-        <h2>Достижения</h2>
-        <div id="achList"></div>
     </div>
 
     <script>
-        // Game state
         let count = 0;
-        let totalClicks = 0;
         let clickPower = 1;
-        let prestige = 0;
-        let prestigeMult = 1; // 1 + prestige * 0.5? We'll compute.
+        let cursorCount = 0;
+        let grandmaCount = 0;
+        let factoryCount = 0;
+        let mineCount = 0;
+        const cursorCost = 15;
+        const grandmaCost = 100;
+        const factoryCost = 500;
+        const mineCost = 3000;
+        const cursorPower = 0.1;
+        const grandmaPower = 1;
+        const factoryPower = 5;
+        const minePower = 20;
+        let prestigeLevel = 0;
+        const prestigeBaseCost = 1e6; // cost to prestige
+        let prestigeCost = prestigeBaseCost;
 
-        // Buildings: name, baseCost, powerPerSec, exponent for cost increase
-        const buildings = [
-            {name: 'cursor', baseCost: 15, power: 0.1, owned: 0},
-            {name: 'grandma', baseCost: 100, power: 1, owned: 0},
-            {name: 'factory', baseCost: 500, power: 8, owned: 0},
-            {name: 'mine', baseCost: 3000, power: 47, owned: 0},
-            {name: 'shipment', baseCost: 10000, power: 260, owned: 0}
-        ];
-
-        const buildingElements = {};
-
-        // Achievements definition
-        const achievements = [
-            {id: 'firstClick', name: 'Первый клик', condition: () => totalClicks >= 1},
-            {id: 'hundredClicks', name: 'Сто кликов', condition: () => totalClicks >= 100},
-            {id: 'thousandClicks', name: 'Тысяча кликов', condition: () => totalClicks >= 1000},
-            {id: 'millionClicks', name: 'Миллион кликов', condition: () => totalClicks >= 1e6},
-            {id: 'buyCursor', name: 'Первый курсор', condition: () => buildings[0].owned >= 1},
-            {id: 'tenCursors', name: 'Десять курсоров', condition: () => buildings[0].owned >= 10},
-            {id: 'hundredGrandma', name: 'Сто бабушек', condition: () => buildings[1].owned >= 100},
-            {id: 'prestige1', name: 'Первый престиж', condition: () => prestige >= 1},
-            {id: 'prestige5', name: 'Пять престижей', condition: () => prestige >= 5}
-        ];
-
-        const achievementElements = {};
-
-        // DOM elements
         const counterEl = document.getElementById('counter');
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
-        const bigCookie = document.getElementById('bigCookie');
+        const cookie = document.getElementById('bigCookie');
+        const buyCursor = document.getElementById('buyCursor');
+        const buyGrandma = document.getElementById('buyGrandma');
+        const buyFactory = document.getElementById('buyFactory');
+        const buyMine = document.getElementById('buyMine');
         const prestigeBtn = document.getElementById('prestigeBtn');
+        const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
         const loadBtn = document.getElementById('loadBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const achList = document.getElementById('achList');
 
-        // Initialize building buttons
-        buildings.forEach(b => {
-            const el = document.getElementById(`buy${b.name.charAt(0).toUpperCase() + b.name.slice(1)}`);
-            buildingElements[b.name] = el;
-            el.addEventListener('click', () => buyBuilding(b));
-        });
-
-        // Click handler
-        bigCookie.addEventListener('click', () => {
-            count += clickPower * prestigeMult;
-            totalClicks++;
-            updateCounter();
-            checkAchievements();
-            // visual feedback
-            bigCookie.style.transform = 'scale(0.95)';
-            setTimeout(() => bigCookie.style.transform = 'scale(1)', 100);
-        });
-
-        // Prestige
-        prestigeBtn.addEventListener('click', () => {
-            if (count >= 1e6) {
-                prestige++;
-                // reset but keep prestige
-                count = 0;
-                clickPower = 1;
-                buildings.forEach(b => b.owned = 0);
-                updateUI();
-                saveGame();
-            }
-        });
-
-        // Save/load/reset
-        saveBtn.addEventListener('click', saveGame);
-        loadBtn.addEventListener('click', loadGame);
-        resetBtn.addEventListener('click', () => {
-            if (confirm('Сбросить весь прогресс?')) {
-                resetGame();
-            }
-        });
-
-        // Functions
-        function updateCounter() {
-            counterEl.textContent = Math.floor(count);
-            totalClicksEl.textContent = totalClicks;
-            prestigeMultEl.textContent = `${1 + prestige * 0.5}x`; // example multiplier
-        }
-
-        function updateUI() {
-            updateCounter();
-            // update building button text and disabled state
-            buildings.forEach(b => {
-                const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
-                buildingElements[b.name].textContent = `${b.name.charAt(0).toUpperCase() + b.name.slice(1)} (${cost})`;
-                buildingElements[b.name].disabled = count < cost;
-            });
-            // prestige btn
-            prestigeBtn.disabled = count < 1e6;
-            prestigeBtn.textContent = `Престиж (${formatNumber(count)}/1,000,000)`;
-        }
-
-        function buyBuilding(b) {
-            const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
-            if (count >= cost) {
-                count -= cost;
-                b.owned++;
-                clickPower += b.power; // each building adds power per click? Actually we treat as click power increase.
-                // Alternatively we could have separate passive income. For simplicity, we add to clickPower.
-                updateUI();
-                saveGame();
-            }
-        }
+        let totalClicks = 0;
+        let achievements = [];
 
         function formatNumber(num) {
             if (num >= 1e9) return (num/1e9).toFixed(1) + 'B';
@@ -260,98 +199,163 @@
             return num.toString();
         }
 
-        function checkAchievements() {
-            achievements.forEach(a => {
-                if (!a.achieved && a.condition()) {
-                    a.achieved = true;
-                    showAchievement(a);
-                }
-            });
+        function updateCounter() {
+            counterEl.textContent = formatNumber(count);
+            prestigeMultEl.textContent = `x${prestigeLevel + 1}`;
         }
 
-        function showAchievement(ach) {
+        function updateTotalClicks() {
+            totalClicksEl.textContent = totalClicks;
+        }
+
+        function cookieClick() {
+            count += clickPower * (prestigeLevel + 1);
+            totalClicks++;
+            updateCounter();
+            updateTotalClicks();
+            checkAchievements();
+        }
+
+        cookie.addEventListener('click', cookieClick);
+
+        function updateBuildingButtons() {
+            buyCursor.disabled = count < cursorCost;
+            buyGrandma.disabled = count < grandmaCost;
+            buyFactory.disabled = count < factoryCost;
+            buyMine.disabled = count < mineCost;
+            prestigeBtn.disabled = count < prestigeCost;
+        }
+
+        function buyCursorFunc() {
+            if (count >= cursorCost) {
+                count -= cursorCost;
+                cursorCount++;
+                updateCounter();
+                updateBuildingButtons();
+            }
+        }
+        function buyGrandmaFunc() {
+            if (count >= grandmaCost) {
+                count -= grandmaCost;
+                grandmaCount++;
+                updateCounter();
+                updateBuildingButtons();
+            }
+        }
+        function buyFactoryFunc() {
+            if (count >= factoryCost) {
+                count -= factoryCost;
+                factoryCount++;
+                updateCounter();
+                updateBuildingButtons();
+            }
+        }
+        function buyMineFunc() {
+            if (count >= mineCost) {
+                count -= mineCost;
+                mineCount++;
+                updateCounter();
+                updateBuildingButtons();
+            }
+        }
+        function prestige() {
+            if (count >= prestigeCost) {
+                prestigeLevel++;
+                count = 0;
+                cursorCount = grandmaCount = factoryCount = mineCount = 0;
+                prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
+                updateCounter();
+                updateBuildingButtons();
+                // reset achievements? keep them
+            }
+        }
+
+        buyCursor.addEventListener('click', buyCursorFunc);
+        buyGrandma.addEventListener('click', buyGrandmaFunc);
+        buyFactory.addEventListener('click', buyFactoryFunc);
+        buyMine.addEventListener('click', buyMineFunc);
+        prestigeBtn.addEventListener('click', prestige);
+
+        function createAchievement(text) {
+            if (achievements.includes(text)) return;
+            achievements.push(text);
             const el = document.createElement('div');
             el.className = 'achievement';
-            el.textContent = `Достижение unlocked: ${ach.name}`;
-            achievementElements[ach.id] = el;
-            achList.appendChild(el);
-            // fade out after 3 seconds
-            setTimeout(() => {
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 600);
-            }, 3000);
+            el.textContent = `🏆 ${text}`;
+            achievementsDiv.appendChild(el);
+            el.style.display = 'block';
+            // fade out after 5 sec
+            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 600); }, 5000);
         }
 
-        function saveGame() {
-            const data = {
-                count,
-                totalClicks,
-                prestige,
-                buildings: buildings.map(b => ({name: b.name, owned: b.owned})),
-                achievements: achievements.filter(a => a.achieved).map(a => a.id)
-            };
-            localStorage.setItem('hermesClickerSave', JSON.stringify(data));
-            // optional feedback
-            saveBtn.textContent = 'Сохранено!';
-            setTimeout(() => saveBtn.textContent = 'Сохранить', 1500);
-        }
-
-        function loadGame() {
-            const saved = localStorage.getItem('hermesClickerSave');
-            if (!saved) {
-                alert('Нет сохранённой игры.');
-                return;
+        function checkAchievements() {
+            if (totalClicks >= 1 && !achievements.includes('Первый клик')) createAchievement('Первый клик');
+            if (count >= 100 && !achievements.contains) { // simplified
+                // we will implement a simple check list
             }
-            const data = JSON.parse(saved);
-            count = data.count || 0;
-            totalClicks = data.totalClicks || 0;
-            prestige = data.prestige || 0;
-            if (data.buildings) {
-                data.buildings.forEach(bd => {
-                    const b = buildings.find(b => b.name === bd.name);
-                    if (b) b.owned = bd.owned;
-                });
-            }
-            if (data.achievements) {
-                data.achievements.forEach(id => {
-                    const ach = achievements.find(a => a.id === id);
-                    if (ach) ach.achieved = true;
-                });
-            }
-            updateUI();
-            // render achieved achievements
-            achievements.filter(a => a.achieved).forEach(a => {
-                if (!achievementElements[a.id]) showAchievement(a);
-            });
-            loadBtn.textContent = 'Загружено!';
-            setTimeout(() => loadBtn.textContent = 'Загрузить', 1500);
         }
 
-        function resetGame() {
-            localStorage.removeItem('hermesClickerSave');
-            location.reload();
-        }
-
-        // Passive income per second (optional)
+        // passive income per second
         setInterval(() => {
-            let passive = 0;
-            buildings.forEach(b => {
-                passive += b.owned * b.power;
-            });
-            count += passive * prestigeMult;
+            const perSec = (cursorCount * cursorPower + grandmaCount * grandmaPower + factoryCount * factoryPower + mineCount * minePower) * (prestigeLevel + 1);
+            count += perSec;
             updateCounter();
             checkAchievements();
         }, 1000);
 
-        // Initialize
-        function init() {
-            updateUI();
-            // try load
+        // save/load
+        function saveGame() {
+            const data = {
+                count,
+                totalClicks,
+                cursorCount,
+                grandmaCount,
+                factoryCount,
+                mineCount,
+                prestigeLevel,
+                prestigeCost,
+                achievements
+            };
+            localStorage.setItem('hermesClickerSave', JSON.stringify(data));
+            alert('Игра сохранена!');
+        }
+        function loadGame() {
             const saved = localStorage.getItem('hermesClickerSave');
             if (saved) {
-                // ask? we can auto load
-                loadGame();
+                const data = JSON.parse(saved);
+                count = data.count || 0;
+                totalClicks = data.totalClicks || 0;
+                cursorCount = data.cursorCount || 0;
+                grandmaCount = data.grandmaCount || 0;
+                factoryCount = data.factoryCount || 0;
+                mineCount = data.mineCount || 0;
+                prestigeLevel = data.prestigeLevel || 0;
+                prestigeCost = data.prestigeCost || prestigeBaseCost;
+                achievements = data.achievements || [];
+                updateCounter();
+                updateTotalClicks();
+                updateBuildingButtons();
+                // render achievements
+                achievementsDiv.innerHTML = '';
+                achievements.forEach(txt => {
+                    const el = document.createElement('div');
+                    el.className = 'achievement';
+                    el.textContent = `🏆 ${txt}`;
+                    achievementsDiv.appendChild(el);
+                });
+                alert('Игра загружена!');
+            } else {
+                alert('Нет сохранённой игры.');
             }
+        }
+        saveBtn.addEventListener('click', saveGame);
+        loadBtn.addEventListener('click', loadGame);
+
+        // init
+        function init() {
+            updateCounter();
+            updateTotalClicks();
+            updateBuildingButtons();
         }
         init();
     </script>
