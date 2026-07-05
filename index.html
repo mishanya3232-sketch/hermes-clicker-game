@@ -149,6 +149,10 @@
         <div class="building" id="buyGrandma">Бабушка (100)</div>
         <div class="building" id="buyFactory">Завод (500)</div>
         <div class="building" id="buyMine">Шахта (3000)</div>
+        <div class="building" id="buyBank">Банк (15000)</div>
+        <div class="building" id="buyTemple">Храм (100000)</div>
+        <div class="building" id="buyWizard">Башня магии (500000)</div>
+        <div class="building" id="buySpaceship">Космический корабль (2500000)</div>
     </div>
     <div id="achievements"></div>
     <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 100k)</button>
@@ -170,7 +174,11 @@
             {name: 'cursor', baseCost: 15, power: 0.1, owned: 0},
             {name: 'grandma', baseCost: 100, power: 1, owned: 0},
             {name: 'factory', baseCost: 500, power: 5, owned: 0},
-            {name: 'mine', baseCost: 3000, power: 20, owned: 0}
+            {name: 'mine', baseCost: 3000, power: 20, owned: 0},
+            {name: 'bank', baseCost: 15000, power: 100, owned: 0},
+            {name: 'temple', baseCost: 100000, power: 400, owned: 0},
+            {name: 'wizard', baseCost: 500000, power: 1600, owned: 0},
+            {name: 'spaceship', baseCost: 2500000, power: 6500, owned: 0}
         ];
         const buildingElements = {};
 
@@ -193,10 +201,6 @@
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
         const cookie = document.getElementById('bigCookie');
-        const buyCursor = document.getElementById('buyCursor');
-        const buyGrandma = document.getElementById('buyGrandma');
-        const buyFactory = document.getElementById('buyFactory');
-        const buyMine = document.getElementById('buyMine');
         const prestigeBtn = document.getElementById('prestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
@@ -235,7 +239,6 @@
         // Save/load/reset
         saveBtn.addEventListener('click', saveGame);
         loadBtn.addEventListener('click', loadGame);
-        // optional reset button could be added
 
         // Helper to format large numbers
         function formatNumber(num) {
