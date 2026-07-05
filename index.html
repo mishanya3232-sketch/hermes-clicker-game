@@ -188,29 +188,31 @@
         ];
         const achievementElements = {};
 
-        // DOM elements
+        // DOM references
         const counterEl = document.getElementById('counter');
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
         const cookie = document.getElementById('bigCookie');
+        const buyCursor = document.getElementById('buyCursor');
+        const buyGrandma = document.getElementById('buyGrandma');
+        const buyFactory = document.getElementById('buyFactory');
+        const buyMine = document.getElementById('buyMine');
         const prestigeBtn = document.getElementById('prestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
         const loadBtn = document.getElementById('loadBtn');
 
-        // Initialize building buttons
+        // Initialize building elements
         buildings.forEach(b => {
             const el = document.getElementById(`buy${b.name.charAt(0).toUpperCase() + b.name.slice(1)}`);
             buildingElements[b.name] = el;
             el.addEventListener('click', () => buyBuilding(b));
         });
 
-        // Click on cookie
+        // Click handler
         cookie.addEventListener('click', () => {
             count += 1 * (prestigeLevel + 1); // each click gives 1 * prestige multiplier
             totalClicks++;
-            updateCounters();
-            checkAchievements();
             // visual feedback
             cookie.style.transform = 'scale(0.95)';
             setTimeout(() => cookie.style.transform = 'scale(1)', 100);
@@ -220,92 +222,90 @@
         prestigeBtn.addEventListener('click', () => {
             if (count >= prestigeCost) {
                 prestigeLevel++;
-                // reset progress but keep prestige
+                // reset everything except prestige level and achievements
                 count = 0;
+                totalClicks = 0;
                 buildings.forEach(b => b.owned = 0);
                 prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
-                updateCursors();
+                updateUI();
                 saveGame();
             }
         });
 
-        // Save/load
+        // Save/load/reset
         saveBtn.addEventListener('click', saveGame);
         loadBtn.addEventListener('click', loadGame);
 
-        // Helper: format number with up to 1 decimal place, remove trailing zeros
+        // Helper to format large numbers
         function formatNumber(num) {
-            if (num >= 1e9) {
-                return (num / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-            }
-            if (num >= 1e6) {
-                return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-            }
-            if (num >= 1e3) {
-                return (num / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-            }
-            // For small numbers, show up to 1 decimal place, strip .0
-            return num.toFixed(1).replace(/\.0$/, '');
+            if (num >= 1e9) return (num/1e9).toFixed(1) + 'B';
+            if (num >= 1e6) return (num/1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num/1e3).toFixed(1) + 'K';
+            return num.toString();
         }
 
-        function updateCounters() {
+        // Update UI elements
+        function updateUI() {
             counterEl.textContent = formatNumber(count);
             totalClicksEl.textContent = totalClicks;
             prestigeMultEl.textContent = `x${prestigeLevel + 1}`;
-            // update building buttons text and disabled state
+            // building buttons text and disabled state
             buildings.forEach(b => {
                 const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
                 buildingElements[b.name].textContent = `${b.name.charAt(0).toUpperCase() + b.name.slice(1)} (${cost})`;
                 buildingElements[b.name].disabled = count < cost;
             });
+            // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
         }
 
+        // Buy building
         function buyBuilding(b) {
             const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
             if (count >= cost) {
                 count -= cost;
                 b.owned++;
-                updateCursors();
+                updateUI();
                 saveGame();
             }
         }
 
+        // Achievement handling
         function checkAchievements() {
             achievements.forEach(a => {
                 if (!a.achieved) {
-                    let conditionMet = false;
+                    let achieved = false;
                     switch (a.id) {
                         case 'firstClick':
-                            conditionMet = totalClicks >= 1;
+                            achieved = totalClicks >= 1;
                             break;
                         case 'hundredClicks':
-                            conditionMet = totalClicks >= 100;
+                            achieved = totalClicks >= 100;
                             break;
                         case 'thousandClicks':
-                            conditionMet = totalClicks >= 1000;
+                            achieved = totalClicks >= 1000;
                             break;
                         case 'millionClicks':
-                            conditionMet = totalClicks >= 1e6;
+                            achieved = totalClicks >= 1e6;
                             break;
                         case 'buyCursor':
-                            conditionMet = buildings[0].owned >= 1;
+                            achieved = buildings[0].owned >= 1;
                             break;
                         case 'tenCursors':
-                            conditionMet = buildings[0].owned >= 10;
+                            achieved = buildings[0].owned >= 10;
                             break;
                         case 'hundredGrandma':
-                            conditionMet = buildings[1].owned >= 100;
+                            achieved = buildings[1].owned >= 100;
                             break;
                         case 'prestige1':
-                            conditionMet = prestigeLevel >= 1;
+                            achieved = prestigeLevel >= 1;
                             break;
                         case 'prestige5':
-                            conditionMet = prestigeLevel >= 5;
+                            achieved = prestigeLevel >= 5;
                             break;
                     }
-                    if (conditionMet) {
+                    if (achieved) {
                         a.achieved = true;
                         showAchievement(a);
                     }
@@ -326,22 +326,23 @@
             }, 3000);
         }
 
+        // Save game to localStorage
         function saveGame() {
             const data = {
                 count,
                 totalClicks,
                 prestigeLevel,
-                prestigeCost,
                 buildings: buildings.map(b => ({name: b.name, owned: b.owned})),
                 achievements: achievements.filter(a => a.achieved).map(a => a.id)
             };
             localStorage.setItem('hermesClickerSave', JSON.stringify(data));
             // temporary feedback
-            const originalText = saveBtn.textContent;
+            const original = saveBtn.textContent;
             saveBtn.textContent = 'Сохранено!';
-            setTimeout(() => saveBtn.textContent = originalText, 1500);
+            setTimeout(() => saveBtn.textContent = original, 1500);
         }
 
+        // Load game from localStorage
         function loadGame() {
             const saved = localStorage.getItem('hermesClickerSave');
             if (!saved) {
@@ -352,7 +353,7 @@
             count = data.count || 0;
             totalClicks = data.totalClicks || 0;
             prestigeLevel = data.prestigeLevel || 0;
-            prestigeCost = data.prestigeCost || prestigeBaseCost;
+            prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
             if (data.buildings) {
                 data.buildings.forEach(bd => {
                     const b = buildings.find(b => b.name === bd.name);
@@ -365,31 +366,31 @@
                     if (ach) ach.achieved = true;
                 });
             }
-            updateCursors();
-            // render achieved achievements
+            updateUI();
+            // show achieved achievements
             achievements.filter(a => a.achieved).forEach(a => {
                 if (!achievementElements[a.id]) showAchievement(a);
             });
-            const originalText = loadBtn.textContent;
+            const original = loadBtn.textContent;
             loadBtn.textContent = 'Загружено!';
-            setTimeout(() => loadBtn.textContent = originalText, 1500);
+            setTimeout(() => loadBtn.textContent = original, 1500);
         }
 
-        // Passive income per second
+        // Game loop for automatic income (per second)
         setInterval(() => {
-            let perSec = 0;
+            let passive = 0;
             buildings.forEach(b => {
-                perSec += b.owned * b.power;
+                passive += b.owned * b.power;
             });
-            count += perSec * (prestigeLevel + 1);
-            updateCursors();
+            count += passive * (prestigeLevel + 1);
+            updateUI();
             checkAchievements();
         }, 1000);
 
-        // Initialize
+        // Initialization
         function init() {
-            updateCursors();
-            // attempt to load saved game
+            updateUI();
+            // Attempt to load saved game
             const saved = localStorage.getItem('hermesClickerSave');
             if (saved) loadGame();
         }
