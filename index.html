@@ -142,7 +142,8 @@
     <div id="stats">
         Счёт: <span id="counter">0</span> <br>
         Кликов всего: <span id="totalClicks">0</span> <br>
-        Множитель престижа: <span id="prestigeMult">1x</span>
+        Множитель престижа: <span id="prestigeMult">1x</span> <br>
+        Доход в сек: <span id="dps">0</span>
     </div>
     <div class="buildings">
         <div class="building" id="buyCursor">Курсор (15)</div>
@@ -177,8 +178,8 @@
             {name: 'mine', displayName: 'Шахта', baseCost: 3000, power: 20, owned: 0},
             {name: 'bank', displayName: 'Банк', baseCost: 15000, power: 100, owned: 0},
             {name: 'temple', displayName: 'Храм', baseCost: 100000, power: 400, owned: 0},
-            {name: 'wizard', displayName: 'Волшебник', baseCost: 400000, power: 1500, owned: 0},
-            {name: 'spaceship', displayName: 'Космический корабль', baseCost: 2000000, power: 7000, owned: 0}
+            {name: 'wizard', displayName: 'Волшебник', baseCost: 400000, power: 1600, owned: 0},
+            {name: 'spaceship', displayName: 'Космический корабль', baseCost: 2000000, power: 6500, owned: 0}
         ];
         const buildingElements = {};
 
@@ -200,6 +201,7 @@
         const counterEl = document.getElementById('counter');
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
+        const dpsEl = document.getElementById('dps');
         const cookie = document.getElementById('bigCookie');
         const prestigeBtn = document.getElementById('prestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
@@ -256,12 +258,19 @@
             // building buttons text and disabled state
             buildings.forEach(b => {
                 const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
-                buildingElements[b.name].textContent = `${b.displayName} (${cost})`;
+                buildingElements[b.name].textContent = `${b.name.charAt(0).toUpperCase() + b.name.slice(1)} (${cost})`;
                 buildingElements[b.name].disabled = count < cost;
             });
             // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
+            // DPS
+            let dps = 0;
+            buildings.forEach(b => {
+                dps += b.owned * b.power;
+            });
+            dps *= (prestigeLevel + 1);
+            dpsEl.textContent = formatNumber(dps);
         }
 
         // Buy building
