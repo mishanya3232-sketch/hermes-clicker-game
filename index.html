@@ -151,7 +151,7 @@
         <div class="building" id="buyMine">Шахта (3000)</div>
     </div>
     <div id="achievements"></div>
-    <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 1M)</button>
+    <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 100k)</button>
     <div id="saveLoad">
         <button class="saveBtn" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
@@ -162,7 +162,7 @@
         let count = 0; // total cookies (can be fractional)
         let totalClicks = 0; // number of manual clicks
         let prestigeLevel = 0;
-        const prestigeBaseCost = 1e6;
+        const prestigeBaseCost = 100000; // 100k threshold for prestige
         let prestigeCost = prestigeBaseCost;
 
         // Buildings: each has power per second
@@ -235,6 +235,7 @@
         // Save/load/reset
         saveBtn.addEventListener('click', saveGame);
         loadBtn.addEventListener('click', loadGame);
+        // optional reset button could be added
 
         // Helper to format large numbers
         function formatNumber(num) {
@@ -376,16 +377,16 @@
             setTimeout(() => loadBtn.textContent = original, 1500);
         }
 
-        // Game loop for automatic income (per second)
+        // Game loop for automatic income (every 100ms for smoothness)
         setInterval(() => {
             let passive = 0;
             buildings.forEach(b => {
                 passive += b.owned * b.power;
             });
-            count += passive * (prestigeLevel + 1);
+            count += passive * (prestigeLevel + 1) / 10; // because interval is 0.1s
             updateUI();
             checkAchievements();
-        }, 1000);
+        }, 100);
 
         // Initialization
         function init() {
