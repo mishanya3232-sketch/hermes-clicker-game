@@ -151,8 +151,8 @@
         <div class="building" id="buyMine">Шахта (3000)</div>
         <div class="building" id="buyBank">Банк (15000)</div>
         <div class="building" id="buyTemple">Храм (100000)</div>
-        <div class="building" id="buyWizard">Башня магии (500000)</div>
-        <div class="building" id="buySpaceship">Космический корабль (2500000)</div>
+        <div class="building" id="buyWizard">Волшебник (400000)</div>
+        <div class="building" id="buySpaceship">Космический корабль (2000000)</div>
     </div>
     <div id="achievements"></div>
     <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 100k)</button>
@@ -171,14 +171,14 @@
 
         // Buildings: each has power per second
         const buildings = [
-            {name: 'cursor', baseCost: 15, power: 0.1, owned: 0},
-            {name: 'grandma', baseCost: 100, power: 1, owned: 0},
-            {name: 'factory', baseCost: 500, power: 5, owned: 0},
-            {name: 'mine', baseCost: 3000, power: 20, owned: 0},
-            {name: 'bank', baseCost: 15000, power: 100, owned: 0},
-            {name: 'temple', baseCost: 100000, power: 400, owned: 0},
-            {name: 'wizard', baseCost: 500000, power: 1600, owned: 0},
-            {name: 'spaceship', baseCost: 2500000, power: 6500, owned: 0}
+            {name: 'cursor', displayName: 'Курсор', baseCost: 15, power: 0.1, owned: 0},
+            {name: 'grandma', displayName: 'Бабушка', baseCost: 100, power: 1, owned: 0},
+            {name: 'factory', displayName: 'Завод', baseCost: 500, power: 5, owned: 0},
+            {name: 'mine', displayName: 'Шахта', baseCost: 3000, power: 20, owned: 0},
+            {name: 'bank', displayName: 'Банк', baseCost: 15000, power: 100, owned: 0},
+            {name: 'temple', displayName: 'Храм', baseCost: 100000, power: 400, owned: 0},
+            {name: 'wizard', displayName: 'Волшебник', baseCost: 400000, power: 1500, owned: 0},
+            {name: 'spaceship', displayName: 'Космический корабль', baseCost: 2000000, power: 7000, owned: 0}
         ];
         const buildingElements = {};
 
@@ -256,7 +256,7 @@
             // building buttons text and disabled state
             buildings.forEach(b => {
                 const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
-                buildingElements[b.name].textContent = `${b.name.charAt(0).toUpperCase() + b.name.slice(1)} (${cost})`;
+                buildingElements[b.name].textContent = `${b.displayName} (${cost})`;
                 buildingElements[b.name].disabled = count < cost;
             });
             // prestige button
