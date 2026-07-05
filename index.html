@@ -1,26 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Clicker Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кликер Hermes</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        #clicker { font-size: 2rem; padding: 20px 40px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        #score { font-size: 1.5rem; margin-top: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #f0f0f0;
+        }
+        #cookie {
+            width: 200px;
+            height: 200px;
+            background-color: #8b4513;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #counter {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #upgrades {
+            margin-top: 30px;
+        }
+        .upgrade {
+            display: inline-block;
+            padding: 10px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .upgrade:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
-    <h1>Clicker Game</h1>
-    <button id="clicker">Click me!</button>
-    <div id="score">Score: 0</div>
+    <h1>Кликер Hermes</h1>
+    <div id="counter">0</div>
+    <div id="cookie">Кликни меня!</div>
+    <div id="upgrades">
+        <button id="buyCursor">Нанять курсор (15)</button>
+        <button id="buyGrandma">Нанять бабушку (100)</button>
+    </div>
+
     <script>
-        let score = 0;
-        const button = document.getElementById('clicker');
-        const scoreDisplay = document.getElementById('score');
-        button.addEventListener('click', () => {
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
+        let count = 0;
+        let clickPower = 1;
+        let cursorCount = 0;
+        let grandmaCount = 0;
+        const cursorCost = 15;
+        const grandmaCost = 100;
+        const cursorPower = 0.1;
+        const grandmaPower = 1;
+
+        const counter = document.getElementById('counter');
+        const cookie = document.getElementById('cookie');
+        const buyCursor = document.getElementById('buyCursor');
+        const buyGrandma = document.getElementById('buyGrandma');
+
+        function updateCounter() {
+            counter.textContent = Math.floor(count);
+        }
+
+        cookie.addEventListener('click', () => {
+            count += clickPower;
+            updateCounter();
         });
+
+        function updateUpgrades() {
+            buyCursor.disabled = count < cursorCost;
+            buyGrandma.disabled = count < grandmaCost;
+        }
+
+        buyCursor.addEventListener('click', () => {
+            if (count >= cursorCost) {
+                count -= cursorCost;
+                cursorCount++;
+                updateCounter();
+                updateUpgrades();
+            }
+        });
+
+        buyGrandma.addEventListener('click', () => {
+            if (count >= grandmaCost) {
+                count -= grandmaCost;
+                grandmaCount++;
+                updateCounter();
+                updateUpgrades();
+            }
+        });
+
+        setInterval(() => {
+            count += cursorCount * cursorPower + grandmaCount * grandmaPower;
+            updateCounter();
+            updateUpgrades();
+        }, 1000);
+
+        updateCounter();
+        updateUpgrades();
     </script>
 </body>
 </html>
