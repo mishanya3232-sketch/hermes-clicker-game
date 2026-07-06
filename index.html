@@ -253,6 +253,8 @@
             // visual feedback
             cookie.style.transform = 'scale(0.95)';
             setTimeout(() => cookie.style.transform = 'scale(1)', 100);
+            updateUI();
+            checkAchievements();
         });
 
         // Golden cookie handler
