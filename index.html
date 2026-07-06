@@ -260,9 +260,11 @@
             if (goldenCookie.classList.contains('visible')) {
                 // reward: 7 seconds of current CpS * prestige multiplier, plus a base bonus
                 let cps = 0;
-                buildings.forEach(b => { cps += b.owned * b.power; });
+                for (const b of buildings) {
+                    cps += b.owned * b.power;
+                }
                 cps *= (prestigeLevel + 1);
-                const reward = Math.max(10, cps * 7) + Math.floor(Math.random() * 500);
+                const reward = Math.max(10, Math.floor(cps * 7)) + Math.floor(Math.random() * 500);
                 count += reward;
                 totalClicks++;
                 updateUI();
@@ -281,7 +283,9 @@
                 // reset everything except prestige level and achievements
                 count = 0;
                 totalClicks = 0;
-                buildings.forEach(b => b.owned = 0);
+                for (const b of buildings) {
+                    b.owned = 0;
+                }
                 prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
                 updateUI();
                 saveGame();
@@ -314,19 +318,19 @@
             totalClicksEl.textContent = totalClicks;
             prestigeMultEl.textContent = `x${prestigeLevel + 1}`;
             // building buttons text and disabled state
-            buildings.forEach(b => {
+            for (const b of buildings) {
                 const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
                 buildingElements[b.name].textContent = `${b.displayName} (${cost})`;
                 buildingElements[b.name].disabled = count < cost;
-            });
+            }
             // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
             // DPS
             let dps = 0;
-            buildings.forEach(b => {
+            for (const b of buildings) {
                 dps += b.owned * b.power;
-            });
+            }
             dps *= (prestigeLevel + 1);
             dpsEl.textContent = formatNumber(dps);
         }
@@ -344,7 +348,7 @@
 
         // Achievement handling
         function checkAchievements() {
-            achievements.forEach(a => {
+            for (const a of achievements) {
                 if (!a.achieved) {
                     let achieved = false;
                     switch (a.id) {
@@ -384,7 +388,7 @@
                         showAchievement(a);
                     }
                 }
-            });
+            }
         }
 
         function showAchievement(ach) {
@@ -437,22 +441,22 @@
             prestigeLevel = data.prestigeLevel || 0;
             prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
             if (data.buildings) {
-                data.buildings.forEach(bd => {
+                for (const bd of data.buildings) {
                     const b = buildings.find(b => b.name === bd.name);
                     if (b) b.owned = bd.owned;
-                });
+                }
             }
             if (data.achievements) {
-                data.achievements.forEach(id => {
+                for (const id of data.achievements) {
                     const ach = achievements.find(a => a.id === id);
                     if (ach) ach.achieved = true;
-                });
+                }
             }
             updateUI();
             // show achieved achievements
-            achievements.filter(a => a.achieved).forEach(a => {
+            for (const a of achievements.filter(a => a.achieved)) {
                 if (!achievementElements[a.id]) showAchievement(a);
-            });
+            }
             const original = loadBtn.textContent;
             loadBtn.textContent = 'Загружено!';
             setTimeout(() => loadBtn.textContent = original, 1500);
@@ -463,7 +467,7 @@
         let goldenVisible = false;
         function startGoldenCookieTimer() {
             if (goldenTimer) clearTimeout(goldenTimer);
-            const delay = Math.random() * (30000 - 10000) + 10000; // 10-30 seconds
+            const delay = Math.random() * (15000 - 5000) + 5000; // 5-15 seconds
             goldenTimer = setTimeout(() => {
                 showGoldenCookie();
             }, delay);
@@ -471,8 +475,8 @@
         function showGoldenCookie() {
             goldenCookie.classList.add('visible');
             goldenVisible = true;
-            // hide after 5-10 seconds
-            const hideDelay = Math.random() * 5000 + 5000;
+            // hide after 3-8 seconds
+            const hideDelay = Math.random() * 5000 + 3000;
             setTimeout(() => {
                 hideGoldenCookie();
             }, hideDelay);
@@ -487,9 +491,9 @@
         // Game loop for automatic income (every 100ms for smoothness)
         setInterval(() => {
             let passive = 0;
-            buildings.forEach(b => {
+            for (const b of buildings) {
                 passive += b.owned * b.power;
-            });
+            }
             count += passive * (prestigeLevel + 1) / 10; // because interval is 0.1s
             updateUI();
             checkAchievements();
