@@ -16,6 +16,8 @@
             --light: #fff;
             --dark: #333;
             --gold: #ffd700;
+            --tooltip-bg: rgba(0,0,0,0.75);
+            --tooltip-color: #fff;
         }
         body {
             font-family: var(--font-sans);
@@ -155,12 +157,30 @@
         button.saveBtn:hover {
             background: #0b7dda;
         }
+        #dailyTask {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        #tooltip {
+            position: absolute;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-color);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 1000;
+        }
         @media (max-width: 480px) {
             h1 { font-size: 1.5rem; }
             #stats { font-size: 1rem; }
             .building { padding: 8px 12px; font-size: 0.85rem; }
             #prestigeBtn { padding: 8px 14px; font-size: 0.85rem; }
             button.saveBtn { padding: 5px 10px; font-size: 0.8rem; }
+            #dailyTask { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -174,6 +194,7 @@
         Множитель престижа: <span id="prestigeMult">1x</span> <br>
         Доход в сек: <span id="dps">0</span>
     </div>
+    <div id="dailyTask"></div>
     <div class="buildings">
         <div class="building" id="buyCursor">Курсор (15)</div>
         <div class="building" id="buyGrandma">Бабушка (100)</div>
@@ -190,6 +211,8 @@
         <button class="saveBtn" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
     </div>
+
+    <div id="tooltip"></div>
 
     <script>
         // Game state
@@ -232,18 +255,23 @@
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
         const dpsEl = document.getElementById('dps');
+        const dailyTaskEl = document.getElementById('dailyTask');
         const cookie = document.getElementById('bigCookie');
         const goldenCookie = document.getElementById('goldenCookie');
         const prestigeBtn = document.getElementById('prestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
         const loadBtn = document.getElementById('loadBtn');
+        const tooltipEl = document.getElementById('tooltip');
 
         // Initialize building elements
         buildings.forEach(b => {
             const el = document.getElementById(`buy${b.name.charAt(0).toUpperCase() + b.name.slice(1)}`);
             buildingElements[b.name] = el;
             el.addEventListener('click', () => buyBuilding(b));
+            // Tooltip listeners
+            el.addEventListener('mouseenter', (e) => showBuildingTooltip(e, b));
+            el.addEventListener('mouseleave', hideTooltip);
         });
 
         // Click handler for regular cookie
@@ -255,6 +283,9 @@
             setTimeout(() => cookie.style.transform = 'scale(1)', 100);
             updateUI();
             checkAchievements();
+            // daily task progress
+            progressDailyClick();
+            playClickSound();
         });
 
         // Golden cookie handler
@@ -275,6 +306,7 @@
                 // visual feedback
                 goldenCookie.style.transform = 'scale(0.8)';
                 setTimeout(() => goldenCookie.style.transform = 'scale(1)', 150);
+                playGoldenSound();
             }
         });
 
@@ -292,6 +324,7 @@
                 updateUI();
                 saveGame();
                 // reset golden cookie timer? keep it running
+                playPrestigeSound();
             }
         });
 
@@ -335,6 +368,8 @@
             }
             dps *= (prestigeLevel + 1);
             dpsEl.textContent = formatNumber(dps);
+            // daily task
+            updateDailyTask();
         }
 
         // Buy building
@@ -345,6 +380,7 @@
                 b.owned++;
                 updateUI();
                 saveGame();
+                playBuildSound();
             }
         }
 
@@ -443,22 +479,22 @@
             prestigeLevel = data.prestigeLevel || 0;
             prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
             if (data.buildings) {
-                for (const bd of data.buildings) {
+                data.buildings.forEach(bd => {
                     const b = buildings.find(b => b.name === bd.name);
                     if (b) b.owned = bd.owned;
-                }
+                });
             }
             if (data.achievements) {
-                for (const id of data.achievements) {
+                data.achievements.forEach(id => {
                     const ach = achievements.find(a => a.id === id);
                     if (ach) ach.achieved = true;
-                }
+                });
             }
             updateUI();
             // show achieved achievements
-            for (const a of achievements.filter(a => a.achieved)) {
+            achievements.filter(a => a.achieved).forEach(a => {
                 if (!achievementElements[a.id]) showAchievement(a);
-            }
+            });
             const original = loadBtn.textContent;
             loadBtn.textContent = 'Загружено!';
             setTimeout(() => loadBtn.textContent = original, 1500);
@@ -490,6 +526,96 @@
             goldenVisible = false;
         }
 
+        // Daily task logic
+        const DAILY_KEY = 'hermesDaily';
+        function getToday() { return new Date().toDateString(); }
+        function initDaily() {
+            const stored = localStorage.getItem(DAILY_KEY);
+            let data;
+            if (stored) {
+                try { data = JSON.parse(stored); } catch { data = {}; }
+            } else { data = {}; }
+            if (!data.date || data.date !== getToday()) {
+                const target = Math.floor(Math.random() * 50) + 50; // 50-99 clicks
+                const reward = 1000; // fixed reward, could scale
+                data = { date: getToday(), clicks: 0, target, reward };
+                localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+            }
+            return data;
+        }
+        function progressDailyClick() {
+            const data = initDaily();
+            data.clicks += 1;
+            localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+            if (data.clicks >= data.target) {
+                // grant reward
+                count += data.reward;
+                totalClicks++;
+                updateUI();
+                showAchievementById('goldenClick'); // reuse achievement or create new; we just show a toast
+                // show a temporary message
+                const msg = document.createElement('div');
+                msg.style.position = 'fixed';
+                msg.style.bottom = '20px';
+                msg.style.left = '50%';
+                msg.style.transform = 'translateX(-50%)';
+                msg.style.background = 'rgba(0,150,0,0.8)';
+                msg.style.color = '#fff';
+                msg.style.padding = '8px 12px';
+                msg.style.borderRadius = '4px';
+                msg.style.fontSize = '0.9rem';
+                msg.textContent = `Задача выполнена! +${formatNumber(data.reward)}`;
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 2000);
+                // reset for next day (will be regenerated on next initDaily)
+                localStorage.removeItem(DAILY_KEY);
+            }
+            updateDailyTask();
+        }
+        function updateDailyTask() {
+            const data = initDaily();
+            dailyTaskEl.textContent = `Ежедневная задача: ${data.clicks}/${data.target} кликов (награда: ${formatNumber(data.reward)})`;
+        }
+
+        // Tooltip logic
+        function showBuildingTooltip(event, building) {
+            const cps = building.owned * building.power * (prestigeLevel + 1);
+            const cost = Math.floor(building.baseCost * Math.pow(1.15, building.owned));
+            tooltipEl.innerHTML = `<strong>${building.displayName}</strong><br>Уровень: ${building.owned}<br>Доход/сек: ${formatNumber(cps)}<br>Следующая стоимость: ${formatNumber(cost)}`;
+            const rect = event.target.getBoundingClientRect();
+            tooltipEl.style.left = (rect.left + window.pageXOffset + rect.width / 2 - tooltipEl.offsetWidth / 2) + 'px';
+            tooltipEl.style.top = (rect.top + window.pageYOffset - tooltipEl.offsetHeight - 10) + 'px';
+            tooltipEl.style.opacity = '1';
+        }
+        function hideTooltip() {
+            tooltipEl.style.opacity = '0';
+        }
+
+        // Sound logic using Web Audio API (beep)
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            return audioCtx;
+        }
+        function playBeep(freq, durationMs) {
+            const ctx = getAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.value = freq;
+            gain.gain.value = 0.002; // volume
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + durationMs / 1000);
+        }
+        function playClickSound() { playBeep(440, 50); }
+        function playBuildSound() { playBeep(660, 50); }
+        function playGoldenSound() { playBeep(880, 80); }
+        function playPrestigeSound() { playBeep(520, 120); }
+
         // Game loop for automatic income (every 100ms for smoothness)
         setInterval(() => {
             let passive = 0;
@@ -509,6 +635,8 @@
             if (saved) loadGame();
             // start golden cookie timer
             startGoldenCookieTimer();
+            // init daily task UI
+            updateDailyTask();
         }
         init();
     </script>
