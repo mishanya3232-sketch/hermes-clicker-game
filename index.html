@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width=device-width, initial-scale=1.0">
     <title>Кликер Hermes – Улучшенная версия</title>
     <style>
         :root {
@@ -15,6 +15,7 @@
             --info: #2196F3;
             --light: #fff;
             --dark: #333;
+            --gold: #ffd700;
         }
         body {
             font-family: var(--font-sans);
@@ -49,6 +50,33 @@
         }
         #bigCookie:active {
             transform: scale(0.95);
+        }
+        #goldenCookie {
+            width: min(120px, 50vw);
+            height: min(120px, 50vw);
+            max-width: 120px;
+            max-height: 120px;
+            background: var(--gold);
+            border-radius: 50%;
+            margin: 10px auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dark);
+            font-size: calc(8px + 1.5vw);
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.1s, opacity 0.2s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #goldenCookie.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #goldenCookie:active {
+            transform: scale(0.9);
         }
         #stats {
             margin: 15px 0;
@@ -139,6 +167,7 @@
 <body>
     <h1>Кликер Hermes</h1>
     <div id="bigCookie">Кликни меня!</div>
+    <div id="goldenCookie">Золотой печенье!</div>
     <div id="stats">
         Счёт: <span id="counter">0</span> <br>
         Кликов всего: <span id="totalClicks">0</span> <br>
@@ -158,7 +187,7 @@
     <div id="achievements"></div>
     <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 100k)</button>
     <div id="saveLoad">
-        <button class="saveBtn" id="saveBtn">Сохранить</button>
+        <button class="saveBtn">" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
     </div>
 
@@ -192,6 +221,7 @@
             {id: 'buyCursor', name: 'Первый курсор', achieved: false},
             {id: 'tenCursors', name: 'Десять курсоров', achieved: false},
             {id: 'hundredGrandma', name: 'Сто бабушек', achieved: false},
+            {id: 'goldenClick', name: 'Клик по золотому печенью', achieved: false},
             {id: 'prestige1', name: 'Первый престиж', achieved: false},
             {id: 'prestige5', name: 'Пять престижей', achieved: false}
         ];
@@ -203,6 +233,7 @@
         const prestigeMultEl = document.getElementById('prestigeMult');
         const dpsEl = document.getElementById('dps');
         const cookie = document.getElementById('bigCookie');
+        const goldenCookie = document.getElementById('goldenCookie');
         const prestigeBtn = document.getElementById('prestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
@@ -215,13 +246,32 @@
             el.addEventListener('click', () => buyBuilding(b));
         });
 
-        // Click handler
+        // Click handler for regular cookie
         cookie.addEventListener('click', () => {
             count += 1 * (prestigeLevel + 1); // each click gives 1 * prestige multiplier
             totalClicks++;
             // visual feedback
             cookie.style.transform = 'scale(0.95)';
             setTimeout(() => cookie.style.transform = 'scale(1)', 100);
+        });
+
+        // Golden cookie handler
+        goldenCookie.addEventListener('click', () => {
+            if (goldenCookie.classList.contains('visible')) {
+                // reward: 7 seconds of current CpS * prestige multiplier, plus a base bonus
+                let cps = 0;
+                buildings.forEach(b => { cps += b.owned * b.power; });
+                cps *= (prestigeLevel + 1);
+                const reward = Math.max(10, cps * 7) + Math.floor(Math.random() * 500);
+                count += reward;
+                totalClicks++;
+                updateUI();
+                hideGoldenCookie();
+                showAchievementById('goldenClick');
+                // visual feedback
+                goldenCookie.style.transform = 'scale(0.8)';
+                setTimeout(() => goldenCookie.style.transform = 'scale(1)', 150);
+            }
         });
 
         // Prestige
@@ -235,6 +285,7 @@
                 prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
                 updateUI();
                 saveGame();
+                // reset golden cookie timer? keep it running
             }
         });
 
@@ -318,6 +369,9 @@
                         case 'hundredGrandma':
                             achieved = buildings[1].owned >= 100;
                             break;
+                        case 'goldenClick':
+                            // will be set when golden cookie clicked
+                            break;
                         case 'prestige1':
                             achieved = prestigeLevel >= 1;
                             break;
@@ -344,6 +398,14 @@
                 el.style.opacity = '0';
                 setTimeout(() => el.remove(), 600);
             }, 3000);
+        }
+
+        function showAchievementById(id) {
+            const ach = achievements.find(a => a.id === id);
+            if (ach && !ach.achieved) {
+                ach.achieved = true;
+                showAchievement(ach);
+            }
         }
 
         // Save game to localStorage
@@ -396,6 +458,32 @@
             setTimeout(() => loadBtn.textContent = original, 1500);
         }
 
+        // Golden cookie spawning logic
+        let goldenTimer = null;
+        let goldenVisible = false;
+        function startGoldenCookieTimer() {
+            if (goldenTimer) clearTimeout(goldenTimer);
+            const delay = Math.random() * (30000 - 10000) + 10000; // 10-30 seconds
+            goldenTimer = setTimeout(() => {
+                showGoldenCookie();
+            }, delay);
+        }
+        function showGoldenCookie() {
+            goldenCookie.classList.add('visible');
+            goldenVisible = true;
+            // hide after 5-10 seconds
+            const hideDelay = Math.random() * 5000 + 5000;
+            setTimeout(() => {
+                hideGoldenCookie();
+            }, hideDelay);
+            // schedule next appearance
+            startGoldenCookieTimer();
+        }
+        function hideGoldenCookie() {
+            goldenCookie.classList.remove('visible');
+            goldenVisible = false;
+        }
+
         // Game loop for automatic income (every 100ms for smoothness)
         setInterval(() => {
             let passive = 0;
@@ -413,6 +501,8 @@
             // Attempt to load saved game
             const saved = localStorage.getItem('hermesClickerSave');
             if (saved) loadGame();
+            // start golden cookie timer
+            startGoldenCookieTimer();
         }
         init();
     </script>
