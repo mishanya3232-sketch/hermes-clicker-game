@@ -18,6 +18,7 @@
             --gold: #ffd700;
             --tooltip-bg: rgba(0,0,0,0.75);
             --tooltip-color: #fff;
+            --synergy-color: #4fc3f7;
         }
         body {
             font-family: var(--font-sans);
@@ -173,6 +174,16 @@
             opacity: 0;
             transition: opacity 0.15s;
             z-index: 1000;
+        }
+        .synergy-badge {
+            display: inline-block;
+            background: var(--synergy-color);
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 5px;
+            vertical-align: middle;
         }
         @media (max-width: 480px) {
             h1 { font-size: 1.5rem; }
@@ -347,6 +358,29 @@
             return num.toFixed(2).replace(/\.00$/, '').replace(/\.0$/, '');
         }
 
+        // Calculate synergy bonuses
+        function calculateSynergyBonus() {
+            let bonus = 0; // total bonus percentage (e.g., 0.15 for 15%)
+            
+            // Synergy 1: For every 10 Cursors, Grandmas produce 5% more
+            const cursorBonus = Math.floor(buildings[0].owned / 10) * 0.05;
+            bonus += cursorBonus;
+            
+            // Synergy 2: For every 5 Factories, Mines produce 4% more
+            const factoryBonus = Math.floor(buildings[2].owned / 5) * 0.04;
+            bonus += factoryBonus;
+            
+            // Synergy 3: For every 3 Banks, Temples produce 6% more
+            const bankBonus = Math.floor(buildings[4].owned / 3) * 0.06;
+            bonus += bankBonus;
+            
+            // Synergy 4: For every 2 Wizards, Spaceships produce 8% more
+            const wizardBonus = Math.floor(buildings[6].owned / 2) * 0.08;
+            bonus += wizardBonus;
+            
+            return bonus;
+        }
+
         // Update UI elements
         function updateUI() {
             counterEl.textContent = formatNumber(count);
@@ -361,13 +395,14 @@
             // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
-            // DPS
-            let dps = 0;
+            // DPS with synergy bonus
+            let baseDPS = 0;
             for (const b of buildings) {
-                dps += b.owned * b.power;
+                baseDPS += b.owned * b.power;
             }
-            dps *= (prestigeLevel + 1);
-            dpsEl.textContent = formatNumber(dps);
+            const synergyBonus = calculateSynergyBonus();
+            const totalDPS = baseDPS * (prestigeLevel + 1) * (1 + synergyBonus);
+            dpsEl.textContent = formatNumber(totalDPS);
             // daily task
             updateDailyTask();
         }
@@ -577,11 +612,42 @@
             dailyTaskEl.textContent = `Ежедневная задача: ${data.clicks}/${data.target} кликов (награда: ${formatNumber(data.reward)})`;
         }
 
-        // Tooltip logic
+        // Tooltip logic with synergy info
         function showBuildingTooltip(event, building) {
-            const cps = building.owned * building.power * (prestigeLevel + 1);
+            const baseCPS = building.owned * building.power;
+            const synergyBonus = calculateSynergyBonus();
+            const totalCPS = baseCPS * (1 + synergyBonus);
             const cost = Math.floor(building.baseCost * Math.pow(1.15, building.owned));
-            tooltipEl.innerHTML = `<strong>${building.displayName}</strong><br>Уровень: ${building.owned}<br>Доход/сек: ${formatNumber(cps)}<br>Следующая стоимость: ${formatNumber(cost)}`;
+            
+            let tooltipContent = `<strong>${building.displayName}</strong><br>Уровень: ${building.owned}<br>Базовый доход/сек: ${formatNumber(baseCPS)}`;
+            
+            // Add synergy info if applicable
+            let synergyText = '';
+            if (building.name === 'grandma' && buildings[0].owned >= 10) {
+                const cursorCount = buildings[0].owned;
+                const bonusLevel = Math.floor(cursorCount / 10);
+                synergyText = `+${bonusLevel * 5}% от курсоров (${cursorCount}/10)`;
+            } else if (building.name === 'mine' && buildings[2].owned >= 5) {
+                const factoryCount = buildings[2].owned;
+                const bonusLevel = Math.floor(factoryCount / 5);
+                synergyText = `+${bonusLevel * 4}% от заводов (${factoryCount}/5)`;
+            } else if (building.name === 'temple' && buildings[4].owned >= 3) {
+                const bankCount = buildings[4].owned;
+                const bonusLevel = Math.floor(bankCount / 3);
+                synergyText = `+${bonusLevel * 6}% от банков (${bankCount}/3)`;
+            } else if (building.name === 'spaceship' && buildings[6].owned >= 2) {
+                const wizardCount = buildings[6].owned;
+                const bonusLevel = Math.floor(wizardCount / 2);
+                synergyText = `+${bonusLevel * 8}% от волшебников (${wizardCount}/2)`;
+            }
+            
+            if (synergyText) {
+                tooltipContent += `<br><span class="synergy-badge">${synergyText}</span>`;
+            }
+            
+            tooltipContent += `<br>Следующая стоимость: ${formatNumber(cost)}`;
+            
+            tooltipEl.innerHTML = tooltipContent;
             const rect = event.target.getBoundingClientRect();
             tooltipEl.style.left = (rect.left + window.pageXOffset + rect.width / 2 - tooltipEl.offsetWidth / 2) + 'px';
             tooltipEl.style.top = (rect.top + window.pageYOffset - tooltipEl.offsetHeight - 10) + 'px';
@@ -622,7 +688,8 @@
             for (const b of buildings) {
                 passive += b.owned * b.power;
             }
-            count += passive * (prestigeLevel + 1) / 10; // because interval is 0.1s
+            const synergyBonus = calculateSynergyBonus();
+            count += passive * (prestigeLevel + 1) * (1 + synergyBonus) / 10; // because interval is 0.1s
             updateUI();
             checkAchievements();
         }, 100);
