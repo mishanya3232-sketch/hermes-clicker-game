@@ -327,7 +327,7 @@
         let count = 0; // total cookies (can be fractional)
         let totalClicks = 0; // number of manual clicks
         let prestigeLevel = 0;
-        const prestigeBaseCost = 100000; // 100k threshold for prestige
+        const prestigeBaseCost = 1000000; // 1,000,000 threshold for prestige
         let prestigeCost = prestigeBaseCost;
         let hyperPrestigeLevel = 0; // hyper prestige level
 
@@ -651,7 +651,7 @@
             // temporary feedback
             const original = saveBtn.textContent;
             saveBtn.textContent = 'Сохранено!';
-            setTimeout(() => saveBtn.textContent = original, 1500); // Fixed timeout from 1500000 to 1500
+            setTimeout(() => saveBtn.textContent = original, 1500);
         }
 
         // Load game from localStorage
