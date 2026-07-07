@@ -13,7 +13,6 @@
         .card .suit { position: absolute; top: 5px; left: 5px; font-size: 1rem; }
         .rank { margin-top: 30px; font-size: 1.5rem; }
         .hand-label { font-size: 1.2rem; margin-bottom: 5px; }
-        .ai-hand .card { opacity: 0.7; } /* dim AI cards */
         button { background: #28a745; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; margin: 5px; }
         button:hover { background: #218838; }
         button.danger { background: #dc3545; }
@@ -27,199 +26,6 @@
     <div class="hand-label">Ваша рука:</div>
     <div id="playerHand" class="hand"></div>
     <div class="hand-label">Рука ИИ (скрыта):</div>
-    <div id="aiHand" class="hand"></div>
-    <div>
-        <button id="hitBtn">Взять карту</button>
-        <button id="standBtn">Хватит</button>
-        <button id="newBtn" class="danger">Новая игра</button>
-    </div>
-    <div id="message"></div>
-
-    <script>
-        const suits = ['♠', '♥', '♦', '♣'];
-        const ranks = [
-            {name: 'Туз', value: 11},
-            {name: 'Король', value: 4},
-            {name: 'Дама', value: 3},
-            {name: 'Валет', value: 2},
-            {name: 'Десятка', value: 10},
-            {name: 'Девятка', value: 0}
-        ];
-        let deck = [];
-        let playerHand = [];
-        let aiHand = [];
-        let playerScore = 0;
-        let aiScore = 0;
-        let gameOver = false;
-
-        const playerScoreEl = document.getElementById('playerScore');
-        const aiScoreEl = document.getElementById('aiScore');
-        const playerHandEl = document.getElementById('playerHand');
-        const aiHandEl = document.getElementById('aiHand');
-        const messageEl = document.getElementById('message');
-        const hitBtn = document.getElementById('hitBtn');
-        const standBtn = document.getElementById('standBtn');
-        const newBtn = document.getElementById('newBtn');
-
-        function initDeck() {
-            deck = [];
-            suits.forEach(s => {
-                ranks.forEach(r => {
-                    deck.push({suit: s, rank: r.name, value: r.value});
-                });
-            });
-            // Fisher-Yates shuffle
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-        }
-
-        function drawCard() {
-            return deck.pop();
-        }
-
-        function renderHand(hand, container) {
-            container.innerHTML = '';
-            hand.forEach((card, index) => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                const rankMap = {'Туз':'A','Король':'K','Дама':'Q','Валет':'J','Десятка':'10','Девятка':'9'};
-                const rankSym = rankMap[card.rank] || card.rank;
-                div.innerHTML = `<div class="suit">${card.suit}</div><div class="rank">${rankSym}</div>`;
-                // If it's AI hand and game not over, keep opacity low (already set via CSS)
-                container.appendChild(div);
-            });
-        }
-
-        function render() {
-            renderHand(playerHand, playerHandEl);
-            // AI hand: show always but with lower opacity (CSS handles)
-            renderHand(aiHand, aiHandEl);
-            playerScoreEl.textContent = playerScore;
-            aiScoreEl.textContent = aiScore;
-        }
-
-        function calculateScore(hand) {
-            let sum = 0;
-            for (const c of hand) sum += c.value;
-            // TODO: implement marriages (king+queen same suit) for extra points
-            return sum;
-        }
-
-        function startGame() {
-            initDeck();
-            playerHand = [];
-            aiHand = [];
-            playerScore = 0;
-            aiScore = 0;
-            gameOver = false;
-            messageEl.textContent = '';
-            render();
-            enableButtons(true);
-        }
-
-        function enableButtons(en) {
-            document.getElementById('hitBtn').disabled = !en;
-            document.getElementById('standBtn').disabled = !en;
-            document.getElementById('newBtn').disabled = false;
-        }
-
-        document.getElementById('hitBtn').addEventListener('click', () => {
-            if (gameOver) return;
-            const card = drawCard();
-            if (!card) {
-                messageEl.textContent = 'Колода пуста!';
-                endGame();
-                return;
-            }
-            playerHand.push(card);
-            playerScore = calculateScore(playerHand);
-            render();
-            if (playerScore > 1000) {
-                messageEl.textContent = 'Перебор! Вы проиграли.';
-                endGame();
-            }
-        });
-
-        document.getElementById('standBtn').addEventListener('click', () => {
-            if (gameOver) return;
-            enableButtons(false);
-            // AI turn: draw while score < 500 and not bust
-            function aiTurn() {
-                if (aiScore >= 500 || aiScore > 1000) {
-                    endGame();
-                    return;
-                }
-                const card = drawCard();
-                if (!card) {
-                    endGame();
-                    return;
-                }
-                aiHand.push(card);
-                aiScore = calculateScore(aiHand);
-                render();
-                if (aiScore > 1000) {
-                    messageEl.textContent = 'ИИ перебрал! Вы выиграли!';
-                    endGame();
-                    return;
-                }
-                setTimeout(aiTurn, 300);
-            }
-            aiTurn();
-        });
-
-        function endGame() {
-            gameOver = true;
-            enableButtons(false);
-            // reveal AI hand fully (remove opacity)
-            // We'll re-render with a temporary class or just set opacity via JS.
-            // Simpler: after game over, we can show all cards normally.
-            // We'll adjust CSS: .hand .card { opacity: 1; } and we had .ai-hand .card { opacity: 0.7; } but we don't have that class.
- Instead we'll just set a flag and render accordingly. Let's change render to accept a parameter.
- However to keep it simple, after game over we will set a flag and render again with full opacity.
- Let's adjust: we'll add a variable revealAI = false; when game over set true.
- Then in render we will apply style.
- But due to time, we can just set the innerHTML with full opacity by removing the CSS override.
- Since we don't have a specific class for AI hand, we can just set opacity via inline style.
- We'll modify renderHand to accept an optional second argument: isAI and reveal.
- Let's do that.
- But given length, we can instead after game over, set a global flag and in renderHand we check.
- Let's implement quickly.
- We'll add a variable revealAI = false; set to true in endGame.
- In renderHand we will apply style: if (isAI && !revealAI) { div.style.opacity = 0.7; } else { div.style.opacity = ''; }
- Let's edit the code accordingly.
- However we are in the middle of writing the file; we can embed the logic now.
- Let's rewrite the script section accordingly.
- Since we have to replace the whole file, we'll produce final version with these<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игра Тыся">
-    <title>Игра Тысяча</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #0a3d62; color: #fff; text-align: center; padding: 20px; }
-        h1 { color: #ffcc00; margin-bottom: 10px; }
-        .score { font-size: 1.8rem; margin: 20px 0; }
-        .hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px; }
-        .card { position: relative; width: 60px; height: 90px; background: #fff; border-radius: 8px; font-size: 1.2rem; line-height: 90px; text-align: center; color: #000; font-weight: bold; }
-        .card .suit { position: absolute; top: 5px; left: 5px; font-size: 1rem; }
-        .rank { margin-top: 30px; font-size: 1.5rem; }
-        .hand-label { font-size: 1.2rem; margin-bottom: 5px; }
-        button { background: #28a745; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; margin: 5px; }
-        button:hover { background: #218838; }
-        button.danger { background: #dc3545; }
-        button.danger:hover { background: #c82333; }
-        #message { margin-top: 15px; font-size: 1.2rem; min-height: 1.4em; }
-    </style>
-</head>
-<body>
-    <h1>Игра Тысяча</h1>
-    <div class="score">Ваши очки: <span id="playerScore">0</span> &nbsp;|&nbsp; Очки ИИ: <span id="aiScore">0</span></div>
-    <div class="hand-label">Ваша рука:</div>
-    <div id="playerHand" class="hand"></div>
-    <div class="hand-label">Рука ИИ:</div>
     <div id="aiHand" class="hand"></div>
     <div>
         <button id="hitBtn">Взять карту</button>
@@ -313,7 +119,16 @@
             aiScore = 0;
             gameOver = false;
             revealAI = false;
-            messageEl.textContent = '';
+            // deal initial two cards to player
+            for (let i = 0; i < 2; i++) {
+                const card = drawCard();
+                if (card) playerHand.push(card);
+            }
+            // deal two cards to AI (hidden)
+            for (let i = 0; i < 2; i++) {
+                const card = drawCard();
+                if (card) aiHand.push(card);
+            }
             render();
             enableButtons(true);
         }
