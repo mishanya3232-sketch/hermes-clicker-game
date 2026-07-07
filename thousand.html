@@ -5,104 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Игра Тысяча</title>
     <style>
-        :root {
-            --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            --bg-color: #0a3d62;
-            --card-bg: #ffffff;
-            --text-dark: #1a1a1a;
-            --accent: #ffcc00;
-            --button: #28a745;
-            --button-hover: #218838;
-            --danger: #dc3545;
-            --danger-hover: #c82333;
-        }
-        body {
-            font-family: var(--font-sans);
-            background: var(--bg-color);
-            margin: 0;
-            padding: 10px;
-            color: #fff;
-            text-align: center;
-        }
-        h1 {
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
-        #game-board {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            width: 60px;
-            height: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-dark);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        .card .suit {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            font-size: 1rem;
-        }
-        .rank {
-            margin-top: 20px;
-            font-size: 1.5rem;
-        }
-        .score-area {
-            margin: 20px 0;
-            font-size: 1.8rem;
-        }
-        .btn {
-            background: var(--button);
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 5px;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background: var(--button-hover);
-        }
-        .btn-danger {
-            background: var(--danger);
-        }
-        .btn-danger:hover {
-            background: var(--danger-hover);
-        }
-        #message {
-            margin-top: 15px;
-            font-size: 1.2rem;
-            min-height: 1.4em;
-        }
+        body { font-family: Arial, sans-serif; background: #0a3d62; color: #fff; text-align: center; padding: 20px; }
+        h1 { color: #ffcc00; }
+        .card { display: inline-block; width: 60px; height: 90px; background: #fff; border-radius: 8px; margin: 5px; font-size: 1.2rem; line-height: 90px; text-align: center; color: #000; font-weight: bold; position: relative; }
+        .card .suit { position: absolute; top: 5px; left: 5px; font-size: 1rem; }
+        .rank { margin-top: 30px; font-size: 1.5rem; }
+        .score { font-size: 1.8rem; margin: 20px 0; }
+        button { background: #28a745; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; margin: 5px; }
+        button:hover { background: #218838; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        #message { margin-top: 15px; font-size: 1.2rem; min-height: 1.4em; }
     </style>
 </head>
 <body>
     <h1>Игра Тысяча</h1>
-    <div class="score-area">
-        Ваши очки: <span id="playerScore">0</span> &nbsp;|&nbsp; Очки ИИ: <span id="aiScore">0</span>
-    </div>
-    <div id="game-board">
-        <!-- карты будут вставляться сюда -->
-    </div>
+    <div class="score">Ваши очки: <span id="playerScore">0</span> &nbsp;|&nbsp; Очки ИИ: <span id="aiScore">0</span></div>
+    <div id="board"></div>
     <div>
-        <button class="btn" id="hitBtn">Взять карту</button>
-        <button class="btn" id="standBtn">Хватит</button>
-        <button class="btn btn-danger" id="newBtn">Новая игра</button>
+        <button id="hitBtn">Взять карту</button>
+        <button id="standBtn">Хватит</button>
+        <button id="newBtn" class="danger">Новая игра</button>
     </div>
     <div id="message"></div>
 
@@ -116,14 +39,7 @@
             {name: 'Десятка', value: 10},
             {name: 'Девятка', value: 0}
         ];
-        // Build deck (24 cards: 6 ranks * 4 suits)
         let deck = [];
-        suits.forEach(s => {
-            ranks.forEach(r => {
-                deck.push({suit: s, rank: r.name, value: r.value, display: r.name[0] + s});
-            });
-        });
-
         let playerHand = [];
         let aiHand = [];
         let playerScore = 0;
@@ -132,14 +48,13 @@
 
         const playerScoreEl = document.getElementById('playerScore');
         const aiScoreEl = document.getElementById('aiScore');
-        const boardEl = document.getElementById('game-board');
+        const boardEl = document.getElementById('board');
         const messageEl = document.getElementById('message');
         const hitBtn = document.getElementById('hitBtn');
         const standBtn = document.getElementById('standBtn');
         const newBtn = document.getElementById('newBtn');
 
         function initDeck() {
-            // create fresh deck and shuffle
             deck = [];
             suits.forEach(s => {
                 ranks.forEach(r => {
@@ -157,32 +72,26 @@
             return deck.pop();
         }
 
-        function renderHand(hand, container) {
-            // we will render directly into board via separate divs
-        }
-
         function render() {
             boardEl.innerHTML = '';
-            // show player cards
+            // show player cards face up
             playerHand.forEach(card => {
                 const div = document.createElement('div');
                 div.className = 'card';
-                // display rank and suit
                 const rankMap = {'Туз':'A','Король':'K','Дама':'Q','Валет':'J','Десятка':'10','Девятка':'9'};
                 const rankSym = rankMap[card.rank] || card.rank;
                 div.innerHTML = `<div class="suit">${card.suit}</div><div class="rank">${rankSym}</div>`;
                 boardEl.appendChild(div);
             });
-            // optionally hide AI cards facedown? we can show after game ends
-            // For simplicity we will not show AI hand during play.
+            // optionally hide AI cards (we can show them after game ends)
             playerScoreEl.textContent = playerScore;
             aiScoreEl.textContent = aiScore;
         }
 
         function calculateScore(hand) {
             let sum = 0;
-            hand.forEach(c => sum += c.value);
-            // TODO: add marriage bonuses (king+queen same suit) for simplicity skip
+            for (const c of hand) sum += c.value;
+            // TODO: implement marriages (king+queen same suit) for extra points
             return sum;
         }
 
@@ -194,18 +103,19 @@
             aiScore = 0;
             gameOver = false;
             messageEl.textContent = '';
-            // deal initial two cards each? In Thousand each player gets certain cards, but we will just allow drawing.
+            // initial deal: 2 cards each? In Thousand each player gets a certain number, but we'll just allow drawing.
             render();
-            enableButtons(true);
+            document.getElementById('hitBtn').disabled = false;
+            document.getElementById('standBtn').disabled = false;
         }
 
         function enableButtons(en) {
-            hitBtn.disabled = !en;
-            standBtn.disabled = !en;
-            newBtn.disabled = false;
+            document.getElementById('hitBtn').disabled = !en;
+            document.getElementById('standBtn').disabled = !en;
+            document.getElementById('newBtn').disabled = false;
         }
 
-        hitBtn.addEventListener('click', () => {
+        document.getElementById('hitBtn').addEventListener('click', () => {
             if (gameOver) return;
             const card = drawCard();
             if (!card) {
@@ -222,7 +132,7 @@
             }
         });
 
-        standBtn.addEventListener('click', () => {
+        document.getElementById('standBtn').addEventListener('click', () => {
             if (gameOver) return;
             enableButtons(false);
             // AI turn: draw while score < 500 and not bust
@@ -240,11 +150,10 @@
                 aiScore = calculateScore(aiHand);
                 render();
                 if (aiScore > 1000) {
-                    messageEl.textContent = 'ИИ перебор! Вы выиграли!';
+                    messageEl.textContent = 'ИИ перебрал! Вы выиграли!';
                     endGame();
                     return;
                 }
-                // continue after short delay
                 setTimeout(aiTurn, 300);
             }
             aiTurn();
@@ -262,7 +171,184 @@
                 const rankSym = rankMap[card.rank] || card.rank;
                 div.innerHTML = `<div class="suit">${card.suit}</div><div class="rank">${rankSym}</div>`;
                 if (idx >= playerHand.length) {
-                    // AI cards maybe slightly transparent
+                    // dim AI? No it's not about this...
+<tool_call>
+<function=write_file>
+<parameter=content>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра Тысяча</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0a3d62; color: #fff; text-align: center; padding: 20px; }
+        h1 { color: #ffcc00; }
+        .card { display: inline-block; width: 60px; height: 90px; background: #fff; border-radius: 8px; margin: 5px; font-size: 1.2rem; line-height: 90px; text-align: center; color: #000; font-weight: bold; position: relative; }
+        .card .suit { position: absolute; top: 5px; left: 5px; font-size: 1rem; }
+        .rank { margin-top: 30px; font-size: 1.5rem; }
+        .score { font-size: 1.8rem; margin: 20px 0; }
+        button { background: #28a745; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; margin: 5px; }
+        button:hover { background: #218838; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        #message { margin-top: 15px; font-size: 1.2rem; min-height: 1.4em; }
+    </style>
+</head>
+<body>
+    <h1>Игра Тысяча</h1>
+    <div class="score">Ваши очки: <span id="playerScore">0</span> &nbsp;|&nbsp; Очки ИИ: <span id="aiScore">0</span></div>
+    <div id="board"></div>
+    <div>
+        <button id="hitBtn">Взять карту</button>
+        <button id="standBtn">Хватит</button>
+        <button id="newBtn" class="danger">Новая игра</button>
+    </div>
+    <div id="message"></div>
+
+    <script>
+        const suits = ['♠', '♥', '♦', '♣'];
+        const ranks = [
+            {name: 'Туз', value: 11},
+            {name: 'Король', value: 4},
+            {name: 'Дама', value: 3},
+            {name: 'Валет', value: 2},
+            {name: 'Десятка', value: 10},
+            {name: 'Девятка', value: 0}
+        ];
+        let deck = [];
+        let playerHand = [];
+        let aiHand = [];
+        let playerScore = 0;
+        let aiScore = 0;
+        let gameOver = false;
+
+        const playerScoreEl = document.getElementById('playerScore');
+        const aiScoreEl = document.getElementById('aiScore');
+        const boardEl = document.getElementById('board');
+        const messageEl = document.getElementById('message');
+        const hitBtn = document.getElementById('hitBtn');
+        const standBtn = document.getElementById('standBtn');
+        const newBtn = document.getElementById('newBtn');
+
+        function initDeck() {
+            deck = [];
+            suits.forEach(s => {
+                ranks.forEach(r => {
+                    deck.push({suit: s, rank: r.name, value: r.value});
+                });
+            });
+            // Fisher-Yates shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function drawCard() {
+            return deck.pop();
+        }
+
+        function render() {
+            boardEl.innerHTML = '';
+            // show player cards face up
+            playerHand.forEach(card => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                const rankMap = {'Туз':'A','Король':'K','Дама':'Q','Валет':'J','Десятка':'10','Девятка':'9'};
+                const rankSym = rankMap[card.rank] || card.rank;
+                div.innerHTML = `<div class="suit">${card.suit}</div><div class="rank">${rankSym}</div>`;
+                boardEl.appendChild(div);
+            });
+            // optionally hide AI cards (we can show them after game ends)
+            playerScoreEl.textContent = playerScore;
+            aiScoreEl.textContent = aiScore;
+        }
+
+        function calculateScore(hand) {
+            let sum = 0;
+            for (const c of hand) sum += c.value;
+            // TODO: implement marriages (king+queen same suit) for extra points
+            return sum;
+        }
+
+        function startGame() {
+            initDeck();
+            playerHand = [];
+            aiHand = [];
+            playerScore = 0;
+            aiScore = 0;
+            gameOver = false;
+            messageEl.textContent = '';
+            // initial deal: 2 cards each? In Thousand each player gets a certain number, but we'll just allow drawing.
+            render();
+            document.getElementById('hitBtn').disabled = false;
+            document.getElementById('standBtn').disabled = false;
+        }
+
+        function enableButtons(en) {
+            document.getElementById('hitBtn').disabled = !en;
+            document.getElementById('standBtn').disabled = !en;
+            document.getElementById('newBtn').disabled = false;
+        }
+
+        document.getElementById('hitBtn').addEventListener('click', () => {
+            if (gameOver) return;
+            const card = drawCard();
+            if (!card) {
+                messageEl.textContent = 'Колода пуста!';
+                endGame();
+                return;
+            }
+            playerHand.push(card);
+            playerScore = calculateScore(playerHand);
+            render();
+            if (playerScore > 1000) {
+                messageEl.textContent = 'Перебор! Вы проиграли.';
+                endGame();
+            }
+        });
+
+        document.getElementById('standBtn').addEventListener('click', () => {
+            if (gameOver) return;
+            enableButtons(false);
+            // AI turn: draw while score < 500 and not bust
+            function aiTurn() {
+                if (aiScore >= 500 || aiScore > 1000) {
+                    endGame();
+                    return;
+                }
+                const card = drawCard();
+                if (!card) {
+                    endGame();
+                    return;
+                }
+                aiHand.push(card);
+                aiScore = calculateScore(aiHand);
+                render();
+                if (aiScore > 1000) {
+                    messageEl.textContent = 'ИИ перебрал! Вы выиграли!';
+                    endGame();
+                    return;
+                }
+                setTimeout(aiTurn, 300);
+            }
+            aiTurn();
+        });
+
+        function endGame() {
+            gameOver = true;
+            enableButtons(false);
+            // reveal AI hand
+            boardEl.innerHTML = '';
+            [...playerHand, ...aiHand].forEach((card, idx) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                const rankMap = {'Туз':'A','Король':'K','Дама':'Q','Валет':'J','Десятка':'10','Девятка':'9'};
+                const rankSym = rankMap[card.rank] || card.rank;
+                div.innerHTML = `<div class="suit">${card.suit}</div><div class="rank">${rankSym}</div>`;
+                if (idx >= playerHand.length) {
+                    // dim AI cards slightly
                     div.style.opacity = 0.7;
                 }
                 boardEl.appendChild(div);
@@ -287,7 +373,7 @@
             messageEl.textContent = result;
         }
 
-        newBtn.addEventListener('click', startGame);
+        document.getElementById('newBtn').addEventListener('click', startGame);
 
         // Initialize
         startGame();
