@@ -141,6 +141,24 @@
             background: #cccccc;
             cursor: not-allowed;
         }
+        #hyperPrestigeBtn {
+            background: var(--info);
+            color: var(--light);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+        #hyperPrestigeBtn:hover {
+            background: #0b7dda;
+        }
+        #hyperPrestigeBtn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
         #saveLoad {
             margin-top: 10px;
         }
@@ -179,6 +197,7 @@
             #stats { font-size: 1rem; }
             .building { padding: 8px 12px; font-size: 0.85rem; }
             #prestigeBtn { padding: 8px 14px; font-size: 0.85rem; }
+            #hyperPrestigeBtn { padding: 8px 14px; font-size: 0.8rem; }
             button.saveBtn { padding: 5px 10px; font-size: 0.8rem; }
             #dailyTask { font-size: 0.8rem; }
         }
@@ -192,6 +211,7 @@
         Счёт: <span id="counter">0</span> <br>
         Кликов всего: <span id="totalClicks">0</span> <br>
         Множитель престижа: <span id="prestigeMult">1x</span> <br>
+        Гипер‑множитель: <span id="hyperMult">1x</span> <br>
         Доход в сек: <span id="dps">0</span>
     </div>
     <div id="dailyTask"></div>
@@ -207,6 +227,7 @@
     </div>
     <div id="achievements"></div>
     <button id="prestigeBtn">Престиж (Сбросить, +1 множитель за каждые 100k)</button>
+    <button id="hyperPrestigeBtn">Гиперпрестиж (Сбросить престиж, +50% за уровень)</button>
     <div id="saveLoad">
         <button class="saveBtn" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
@@ -221,6 +242,9 @@
         let prestigeLevel = 0;
         const prestigeBaseCost = 100000; // 100k threshold for prestige
         let prestigeCost = prestigeBaseCost;
+        let hyperPrestigeLevel = 0; // hyper prestige level
+        // Hyper prestige unlocks after reaching prestigeLevel >= 5
+        // Cost: reset prestigeLevel to 0, gain permanent multiplier
 
         // Buildings: each has base power per second
         const buildings = [
@@ -246,7 +270,8 @@
             {id: 'hundredGrandma', name: 'Сто бабушек', achieved: false},
             {id: 'goldenClick', name: 'Клик по золотому печенью', achieved: false},
             {id: 'prestige1', name: 'Первый престиж', achieved: false},
-            {id: 'prestige5', name: 'Пять престижей', achieved: false}
+            {id: 'prestige5', name: 'Пять престижей', achieved: false},
+            {id: 'hyperPrestige1', name: 'Первый гиперпрестиж', achieved: false}
         ];
         const achievementElements = {};
 
@@ -254,11 +279,13 @@
         const counterEl = document.getElementById('counter');
         const totalClicksEl = document.getElementById('totalClicks');
         const prestigeMultEl = document.getElementById('prestigeMult');
+        const hyperMultEl = document.getElementById('hyperMult');
         const dpsEl = document.getElementById('dps');
         const dailyTaskEl = document.getElementById('dailyTask');
         const cookie = document.getElementById('bigCookie');
         const goldenCookie = document.getElementById('goldenCookie');
         const prestigeBtn = document.getElementById('prestigeBtn');
+        const hyperPrestigeBtn = document.getElementById('hyperPrestigeBtn');
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
         const loadBtn = document.getElementById('loadBtn');
@@ -276,7 +303,7 @@
 
         // Click handler for regular cookie
         cookie.addEventListener('click', () => {
-            count += 1 * (prestigeLevel + 1); // each click gives 1 * prestige multiplier
+            count += 1 * (prestigeLevel + 1) * (1 + hyperPrestigeLevel * 0.5); // each click gives 1 * prestige multiplier * hyper multiplier
             totalClicks++;
             // visual feedback
             cookie.style.transform = 'scale(0.95)';
@@ -291,7 +318,7 @@
         // Golden cookie handler
         goldenCookie.addEventListener('click', () => {
             if (goldenCookie.classList.contains('visible')) {
-                // reward: 7 seconds of current CpS * prestige multiplier, plus a base bonus
+                // reward: 7 seconds of current CpS * prestige multiplier * hyper multiplier, plus a base bonus
                 let baseCPS = 0;
                 let cumulativeBonus = 0; // bonus multiplier from previous buildings
                 for (let i = 0; i < buildings.length; i++) {
@@ -300,7 +327,7 @@
                     baseCPS += b.owned * effectivePower;
                     cumulativeBonus += 0.05 * b.owned; // each level of current adds 5% to next
                 }
-                baseCPS *= (prestigeLevel + 1);
+                baseCPS *= (prestigeLevel + 1) * (1 + hyperPrestigeLevel * 0.5);
                 const reward = Math.max(10, Math.floor(baseCPS * 7)) + Math.floor(Math.random() * 500);
                 count += reward;
                 totalClicks++;
@@ -318,7 +345,7 @@
         prestigeBtn.addEventListener('click', () => {
             if (count >= prestigeCost) {
                 prestigeLevel++;
-                // reset everything except prestige level and achievements
+                // reset everything except prestige level and achievements and hyper prestige level
                 count = 0;
                 totalClicks = 0;
                 for (const b of buildings) {
@@ -329,6 +356,31 @@
                 saveGame();
                 // reset golden cookie timer? keep it running
                 playPrestigeSound();
+                // update hyper prestige button visibility
+                updateHyperPrestigeButton();
+            }
+        });
+
+        // Hyper prestige
+        hyperPrestigeBtn.addEventListener('click', () => {
+            // Can hyper prestige if prestigeLevel >= 5
+            if (prestigeLevel >= 5) {
+                hyperPrestigeLevel++;
+                // reset everything except hyper prestige level
+                count = 0;
+                totalClicks = 0;
+                prestigeLevel = 0;
+                prestigeCost = prestigeBaseCost;
+                for (const b of buildings) {
+                    b.owned = 0;
+                }
+                updateUI();
+                saveGame();
+                showAchievementById('hyperPrestige1');
+                // visual feedback maybe
+                playPrestigeSound();
+                // update hyper prestige button visibility (will hide if condition not met)
+                updateHyperPrestigeButton();
             }
         });
 
@@ -356,6 +408,7 @@
             counterEl.textContent = formatNumber(count);
             totalClicksEl.textContent = totalClicks;
             prestigeMultEl.textContent = `x${prestigeLevel + 1}`;
+            hyperMultEl.textContent = `x${1 + hyperPrestigeLevel * 0.5}`;
             // building buttons text and disabled state
             for (const b of buildings) {
                 const cost = Math.floor(b.baseCost * Math.pow(1.15, b.owned));
@@ -365,7 +418,7 @@
             // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
-            // DPS with cumulative bonus
+            // DPS with cumulative bonus and hyper multiplier
             let totalBase = 0;
             let cumulativeBonus = 0;
             for (let i = 0; i < buildings.length; i++) {
@@ -374,10 +427,12 @@
                 totalBase += b.owned * effectivePower;
                 cumulativeBonus += 0.05 * b.owned;
             }
-            const totalDPS = totalBase * (prestigeLevel + 1);
+            const totalDPS = totalBase * (prestigeLevel + 1) * (1 + hyperPrestigeLevel * 0.5);
             dpsEl.textContent = formatNumber(totalDPS);
             // daily task
             updateDailyTask();
+            // update hyper prestige button visibility
+            updateHyperPrestigeButton();
         }
 
         // Buy building
@@ -428,6 +483,9 @@
                         case 'prestige5':
                             achieved = prestigeLevel >= 5;
                             break;
+                        case 'hyperPrestige1':
+                            achieved = hyperPrestigeLevel >= 1;
+                            break;
                     }
                     if (achieved) {
                         a.achieved = true;
@@ -464,6 +522,7 @@
                 count,
                 totalClicks,
                 prestigeLevel,
+                hyperPrestigeLevel,
                 buildings: buildings.map(b => ({name: b.name, owned: b.owned})),
                 achievements: achievements.filter(a => a.achieved).map(a => a.id)
             };
@@ -485,6 +544,7 @@
             count = data.count || 0;
             totalClicks = data.totalClicks || 0;
             prestigeLevel = data.prestigeLevel || 0;
+            hyperPrestigeLevel = data.hyperPrestigeLevel || 0;
             prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
             if (data.buildings) {
                 data.buildings.forEach(bd => {
@@ -517,6 +577,10 @@
             goldenTimer = setTimeout(() => {
                 showGoldenCookie();
             }, delay);
+        }
+        function showGoldenCookie() {
+            goldenCookie.classList.add('visible');
+            goldenVisible = delta);
         }
         function showGoldenCookie() {
             goldenCookie.classList.add('visible');
@@ -640,7 +704,7 @@
                 totalBase += b.owned * effectivePower;
                 cumulativeBonus += 0.05 * b.owned;
             }
-            count += totalBase * (prestigeLevel + 1) / 10; // because interval is 0.1s
+            count += totalBase * (prestigeLevel + 1) * (1 + hyperPrestigeLevel * 0.5) / 10; // because interval is 0.1s
             updateUI();
             checkAchievements();
         }, 100);
@@ -655,8 +719,21 @@
             startGoldenCookieTimer();
             // init daily task UI
             updateDailyTask();
+            // update hyper prestige button visibility
+            updateHyperPrestigeButton();
         }
         init();
+
+        // Function to show/hide hyper prestige button based on prestigeLevel
+        function updateHyperPrestigeButton() {
+            if (prestigeLevel >= 5) {
+                hyperPrestigeBtn.style.display = 'inline-block';
+                hyperPrestigeBtn.disabled = false;
+                hyperPrestigeBtn.textContent = `Гиперпрестиж (Сбросить престиж, +50% за уровень)`;
+            } else {
+                hyperPrestigeBtn.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>
