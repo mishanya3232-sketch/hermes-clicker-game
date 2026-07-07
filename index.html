@@ -18,6 +18,8 @@
             --gold: #ffd700;
             --tooltip-bg: rgba(0,0,0,0.75);
             --tooltip-color: #fff;
+            --settings-bg: rgba(0,0,0,0.8);
+            --settings-color: #fff;
         }
         body {
             font-family: var(--font-sans);
@@ -180,17 +182,81 @@
             font-size: 0.9rem;
             color: #555;
         }
-        #tooltip {
-            position: absolute;
-            background: var(--tooltip-bg);
-            color: var(--tooltip-color);
-            padding: 6px 10px;
+        #settingsBtn {
+            background: var(--primary);
+            color: var(--light);
+            border: none;
+            padding: 6px 12px;
             border-radius: 4px;
-            font-size: 0.85rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        #settingsBtn:hover {
+            background: var(--primary-dark);
+        }
+        #settingsPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--settings-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             z-index: 1000;
+            display: none;
+        }
+        #settingsPanel.show {
+            display: flex;
+        }
+        .settings-content {
+            background: var(--bg-color);
+            color: var(--dark);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .settings-content h2 {
+            margin-top: 0;
+        }
+        .settings-content label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        .settings-content input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .settings-content button {
+            margin-top: 10px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .settings-content button.export {
+            background: var(--info);
+            color: var(--light);
+        }
+        .settings-content button.import {
+            background: var(--primary);
+            color: var(--light);
+        }
+        .settings-content button.reset {
+            background: var(--danger);
+            color: var(--light);
+        }
+        .settings-content button.close {
+            background: var(--warning);
+            color: var(--light);
+        }
+        .settings-content button:hover {
+            opacity: 0.9;
         }
         @media (max-width: 480px) {
             h1 { font-size: 1.5rem; }
@@ -200,6 +266,8 @@
             #hyperPrestigeBtn { padding: 8px 14px; font-size: 0.8rem; }
             button.saveBtn { padding: 5px 10px; font-size: 0.8rem; }
             #dailyTask { font-size: 0.8rem; }
+            #settingsBtn { font-size: 0.8rem; padding: 4px 8px; }
+            .settings-content { padding: 15px; }
         }
     </style>
 </head>
@@ -232,6 +300,25 @@
         <button class="saveBtn" id="saveBtn">Сохранить</button>
         <button class="saveBtn" id="loadBtn">Загрузить</button>
     </div>
+    <button id="settingsBtn">Настройки</button>
+
+    <div id="settingsPanel">
+        <div class="settings-content">
+            <h2>Настройки</h2>
+            <label>
+                <input type="checkbox" id="soundToggle"> Звуковые эффекты
+            </label>
+            <label>
+                <input type="checkbox" id="animationToggle"> Анимации
+            </label>
+            <br>
+            <button class="exportBtn">Экспортировать сохранение</button>
+            <button class="importBtn">Импортировать сохранение</button>
+            <br>
+            <button class="resetBtn" style="background:#dc3545;color:#white;">Сбросить всё (вкл. настройки)</button>
+            <button class="closeBtn">Закрыть</button>
+        </div>
+    </div>
 
     <div id="tooltip"></div>
 
@@ -243,8 +330,12 @@
         const prestigeBaseCost = 100000; // 100k threshold for prestige
         let prestigeCost = prestigeBaseCost;
         let hyperPrestigeLevel = 0; // hyper prestige level
-        // Hyper prestige unlocks after reaching prestigeLevel >= 5
-        // Cost: reset prestigeLevel to 0, gain permanent multiplier
+
+        // Settings
+        let settings = {
+            sound: true,
+            animations: true
+        };
 
         // Buildings: each has base power per second
         const buildings = [
@@ -289,6 +380,14 @@
         const achievementsDiv = document.getElementById('achievements');
         const saveBtn = document.getElementById('saveBtn');
         const loadBtn = document.getElementById('loadBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const soundToggle = document.getElementById('soundToggle');
+        const animationToggle = document.getElementById('animationToggle');
+        const exportBtn = document.querySelector('.settings-content .exportBtn');
+        const importBtn = document.querySelector('.settings-content .importBtn');
+        const resetBtn = document.querySelector('.settings-content .resetBtn');
+        const closeBtn = document.querySelector('.settings-content .closeBtn');
         const tooltipEl = document.getElementById('tooltip');
 
         // Initialize building elements
@@ -306,13 +405,15 @@
             count += 1 * (prestigeLevel + 1) * (1 + hyperPrestigeLevel * 0.5); // each click gives 1 * prestige multiplier * hyper multiplier
             totalClicks++;
             // visual feedback
-            cookie.style.transform = 'scale(0.95)';
-            setTimeout(() => cookie.style.transform = 'scale(1)', 100);
+            if (settings.animations) {
+                cookie.style.transform = 'scale(0.95)';
+                setTimeout(() => cookie.style.transform = 'scale(1)', 100);
+            }
             updateUI();
             checkAchievements();
             // daily task progress
             progressDailyClick();
-            playClickSound();
+            playSound('click');
         });
 
         // Golden cookie handler
@@ -335,9 +436,11 @@
                 hideGoldenCookie();
                 showAchievementById('goldenClick');
                 // visual feedback
-                goldenCookie.style.transform = 'scale(0.8)';
-                setTimeout(() => goldenCookie.style.transform = 'scale(1)', 150);
-                playGoldenSound();
+                if (settings.animations) {
+                    goldenCookie.style.transform = 'scale(0.8)';
+                    setTimeout(() => goldenCookie.style.transform = 'scale(1)', 150);
+                }
+                playSound('golden');
             }
         });
 
@@ -355,7 +458,7 @@
                 updateUI();
                 saveGame();
                 // reset golden cookie timer? keep it running
-                playPrestigeSound();
+                playSound('prestige');
                 // update hyper prestige button visibility
                 updateHyperPrestigeButton();
             }
@@ -378,7 +481,7 @@
                 saveGame();
                 showAchievementById('hyperPrestige1');
                 // visual feedback maybe
-                playPrestigeSound();
+                playSound('prestige');
                 // update hyper prestige button visibility (will hide if condition not met)
                 updateHyperPrestigeButton();
             }
@@ -387,6 +490,23 @@
         // Save/load/reset
         saveBtn.addEventListener('click', saveGame);
         loadBtn.addEventListener('click', loadGame);
+        settingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.add('show');
+            // update checkboxes from stored settings
+            soundToggle.checked = settings.sound;
+            animationToggle.checked = settings.animations;
+        });
+        closeBtn.addEventListener('click', () => {
+            settingsPanel.classList.remove('show');
+        });
+        exportBtn.addEventListener('click', exportSave);
+        importBtn.addEventListener('click', importSave);
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите сбросить всё, включая настройки? Это действие необратимо.')) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
 
         // Helper to format large numbers with up to two decimal places, stripping unnecessary zeros
         function formatNumber(num) {
@@ -418,7 +538,9 @@
             // prestige button
             prestigeBtn.disabled = count < prestigeCost;
             prestigeBtn.textContent = `Престиж (${formatNumber(count)}/${formatNumber(prestigeCost)})`;
-            // DPS with cumulative bonus and hyper multiplier
+            // hyper prestige button
+            updateHyperPrestigeButton();
+            // DPS with cumulative bonus
             let totalBase = 0;
             let cumulativeBonus = 0;
             for (let i = 0; i < buildings.length; i++) {
@@ -431,8 +553,6 @@
             dpsEl.textContent = formatNumber(totalDPS);
             // daily task
             updateDailyTask();
-            // update hyper prestige button visibility
-            updateHyperPrestigeButton();
         }
 
         // Buy building
@@ -443,7 +563,7 @@
                 b.owned++;
                 updateUI();
                 saveGame();
-                playBuildSound();
+                playSound('build');
             }
         }
 
@@ -524,13 +644,14 @@
                 prestigeLevel,
                 hyperPrestigeLevel,
                 buildings: buildings.map(b => ({name: b.name, owned: b.owned})),
-                achievements: achievements.filter(a => a.achieved).map(a => a.id)
+                achievements: achievements.filter(a => a.achieved).map(a => a.id),
+                settings: settings
             };
             localStorage.setItem('hermesClickerSave', JSON.stringify(data));
             // temporary feedback
             const original = saveBtn.textContent;
             saveBtn.textContent = 'Сохранено!';
-            setTimeout(() => saveBtn.textContent = original, 1500);
+            setTimeout(() => saveBtn.textContent = original, 1500); // Fixed timeout from 1500000 to 1500
         }
 
         // Load game from localStorage
@@ -558,6 +679,11 @@
                     if (ach) ach.achieved = true;
                 });
             }
+            if (data.settings) {
+                settings = data.settings;
+                soundToggle.checked = settings.sound;
+                animationToggle.checked = settings.animations;
+            }
             updateUI();
             // show achieved achievements
             achievements.filter(a => a.achieved).forEach(a => {
@@ -566,6 +692,72 @@
             const original = loadBtn.textContent;
             loadBtn.textContent = 'Загружено!';
             setTimeout(() => loadBtn.textContent = original, 1500);
+        }
+
+        // Export save as base64 string
+        function exportSave() {
+            const data = {
+                count,
+                totalClicks,
+                prestigeLevel,
+                hyperPrestigeLevel,
+                buildings: buildings.map(b => ({name: b.name, owned: b.owned})),
+                achievements: achievements.filter(a => a.achieved).map(a => a.id),
+                settings: settings
+            };
+            const json = JSON.stringify(data);
+            const base64 = btoa(json);
+            const textarea = document.createElement('textarea');
+            textarea.value = base64;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy').catch(() => {/* fallback for older browsers */});
+            document.body.removeChild(textarea);
+            alert('Скопировано в буфер обмена! Вставьте (Ctrl+V) чтобы сохранить где-то.');
+        }
+
+        // Import save from base64 string
+        function importSave() {
+            const base64 = prompt('Введите строку сохранения (base64):');
+            if (!base64) return;
+            try {
+                const json = atob(base64);
+                const data = JSON.parse(json);
+                // Validate minimal structure
+                if (typeof data.count !== 'number') throw new Error('Invalid save');
+                count = data.count;
+                totalClicks = data.totalClicks || 0;
+                prestigeLevel = data.prestigeLevel || 0;
+                hyperPrestigeLevel = data.hyperPrestigeLevel || 0;
+                prestigeCost = Math.floor(prestigeBaseCost * Math.pow(1.5, prestigeLevel));
+                if (data.buildings) {
+                    data.buildings.forEach(bd => {
+                        const b = buildings.find(b => b.name === bd.name);
+                        if (b) b.owned = bd.owned;
+                    });
+                }
+                if (data.achievements) {
+                    data.achievements.forEach(id => {
+                        const ach = achievements.find(a => a.id === id);
+                        if (ach) ach.achieved = true;
+                    });
+                }
+                if (data.settings) {
+                    settings = data.settings;
+                    soundToggle.checked = settings.sound;
+                    animationToggle.checked = settings.animations;
+                }
+                updateUI();
+                // show achieved achievements
+                achievements.filter(a => a.achieved).forEach(a => {
+                    if (!achievementElements[a.id]) showAchievement(a);
+                });
+                alert('Игра загружена!');
+            } catch (e) {
+                alert('Ошибка загрузки: ' + e.message);
+            }
         }
 
         // Golden cookie spawning logic
@@ -577,10 +769,6 @@
             goldenTimer = setTimeout(() => {
                 showGoldenCookie();
             }, delay);
-        }
-        function showGoldenCookie() {
-            goldenCookie.classList.add('visible');
-            goldenVisible = delta);
         }
         function showGoldenCookie() {
             goldenCookie.classList.add('visible');
@@ -673,13 +861,19 @@
         let audioCtx = null;
         function getAudioContext() {
             if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                } catch (e) {
+                    console.warn('Web Audio API not supported', e);
+                    return null;
+                }
             }
             return audioCtx;
         }
         function playBeep(freq, durationMs) {
             const ctx = getAudioContext();
+            if (!ctx) return;
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.frequency.value = freq;
@@ -689,10 +883,15 @@
             osc.start();
             osc.stop(ctx.currentTime + durationMs / 1000);
         }
-        function playClickSound() { playBeep(440, 50); }
-        function playBuildSound() { playBeep(660, 50); }
-        function playGoldenSound() { playBeep(880, 80); }
-        function playPrestigeSound() { playBeep(520, 120); }
+        function playSound(type) {
+            if (!settings.sound) return;
+            switch (type) {
+                case 'click': playBeep(440, 50); break;
+                case 'build': playBeep(660, 50); break;
+                case 'golden': playBeep(880, 80); break;
+                case 'prestige': playBeep(520, 120); break;
+            }
+        }
 
         // Game loop for automatic income (every 100ms for smoothness)
         setInterval(() => {
@@ -734,6 +933,14 @@
                 hyperPrestigeBtn.style.display = 'none';
             }
         }
+
+        // Settings change listeners
+        soundToggle.addEventListener('change', () => {
+            settings.sound = soundToggle.checked;
+        });
+        animationToggle.addEventListener('change', () => {
+            settings.animations = animationToggle.checked;
+        });
     </script>
 </body>
 </html>
