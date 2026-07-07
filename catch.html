@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Catch the Apple - Простая игра</title>
+<style>
+    body {margin:0; padding:0; background:#f0f8ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif;}
+    canvas {background:#fff; border:2px solid #333; box-shadow:0 0 10px rgba(0,0,0,0.2);}
+    #info {position:absolute; top:10px; left:10px; color:#333;}
+    #startBtn {position:absolute; bottom:20px; padding:10px 20px; font-size:1.2rem; background:#4CAF50; color:#fff; border:none; border-radius:5px; cursor:pointer;}
+    #startBtn:hover {background:#45a049;}
+    #gameOver {position:absolute; top:50%; left:50%; transform:-50%-50%; background:rgba(0,0,0,0.7); color:#fff; padding:20px; border-radius:10px; text-align:center; display:none;}
+</style>
+</head>
+<body>
+<div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="info">Счёт: <span id="score">0</span> | Жизни: <span id="lives">3</span></div>
+    <button id="startBtn">Начать игру</button>
+    <div id="gameOver">
+        <h2>Игра окончена</h2>
+        <p>Ваш счёт: <span id="finalScore">0</span></p>
+        <button id="restartBtn">Играть снова</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const infoScore = document.getElementById('score');
+const infoLives = document.getElementById('lives');
+const startBtn = document.getElementById('startBtn');
+const gameOverDiv = document.getElementById('gameOver');
+const finalScoreDiv = document.getElementById('finalScore');
+const restartBtn = document.getElementById('restartBtn');
+
+const basketWidth = 80;
+const basketHeight = 20;
+let basketX = (canvas.width - basketWidth) / 2;
+const basketSpeed = 8;
+
+const appleSize = 30;
+let apples = [];
+const appleSpeed = 3;
+const spawnInterval = 800; // ms
+let spawnTimer = 0;
+
+let score = 0;
+let lives = 3;
+let gameActive = false;
+let lastTime = 0;
+
+// Apple class
+function Apple() {
+    this.x = Math.random() * (canvas.width - appleSize);
+    this.y = -appleSize;
+    this.speed = appleSize > 0 ? appleSpeed : 1;
+    this.update = function() {
+        this.y += this.speed;
+    };
+    this.draw = function() {
+        ctx.fillStyle = '#ff0';
+        // draw simple apple shape
+        ctx.beginPath();
+        ctx.arc(this.x + appleSize/2, this.y + appleSize/2, appleSize/2, 0, Math.PI*2);
+        ctx.fill();
+        // stem
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(this.x + appleSize/2 - 2, this.y - 4, 4, 6);
+    };
+    this.getRect = function() {
+        return {x:this.x, y:this.y, w:appleSize, h:appleSize};
+    };
+}
+
+// Basket
+function drawBasket() {
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(basketX, canvas.height - basketHeight, basketWidth, basketHeight);
+}
+
+// Collision detection
+function rectIntersects(r1, r2) {
+    return !(r1.x + r1.w < r2.x ||
+             r2.x + r2.w < r1.x ||
+             r1.y + r1.h < r2.y ||
+             r2.y + r2.h < r1.y);
+}
+
+function spawnApple() {
+    apples.push(new Apple());
+}
+
+function update(deltaTime) {
+    if (!gameActive) return;
+    spawnTimer += deltaTime;
+    if (spawnTimer >= spawnInterval) {
+        spawnTimer = 0;
+        spawnApple();
+    }
+    // update apples
+    for (let i = apples.length - 1; i >= 0; i--) {
+        const a = apples[i];
+        a.update();
+        // check if off screen
+        if (a.y > canvas.height) {
+            apples.splice(i,1);
+            lives--;
+            infoLives.textContent = lives;
+            if (lives <= 0) {
+                endGame();
+            }
+            continue;
+        }
+        // check collision with basket
+        const basketRect = {x:basketX, y:canvas.height - basketHeight, w:basketWidth, h:basketHeight};
+        if (rectIntersects(a.getRect(), basketRect)) {
+            apples.splice(i,1);
+            score += 10;
+            infoScore.textContent = score;
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBasket();
+    for (const a of apples) {
+        a.draw();
+    }
+}
+
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const delta = timestamp - lastTime;
+    lastTime = timestamp;
+    update(delta);
+    draw();
+    if (gameActive) requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    // reset
+    basketX = (canvas.width - basketWidth) / 2;
+    apples = [];
+    score = 0;
+    lives = 3;
+    infoScore.textContent = score;
+    infoLives.textContent = lives;
+    spawnTimer = 0;
+    gameActive = true;
+    lastTime = 0;
+    gameOverDiv.style.display = 'none';
+    requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+    gameActive = false;
+    finalScoreDiv.textContent = score;
+    gameOverDiv.style.display = 'block';
+}
+
+// Controls
+document.addEventListener('keydown', e => {
+    if (!gameActive) return;
+    if (e.key === 'ArrowLeft' && basketX > 0) {
+        basketX -= basketSpeed;
+    } else if (e.key === 'ArrowRight' && basketX < canvas.width - basketWidth) {
+        basketX += basketSpeed;
+    }
+});
+
+// Touch controls (optional)
+let touchStartX = 0;
+canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+}, {passive:true});
+canvas.addEventListener('touchmove', e => {
+    if (!gameActive) return;
+    const touchX = e.touches[0].clientX;
+    const diff = touchX - touchStartX;
+    if (Math.abs(diff) > 5) {
+        if (diff < 0 && basketX > 0) basketX -= basketSpeed;
+        if (diff > 0 && basketX < canvas.width - basketWidth) basketX += basketSpeed;
+        touchStartX = touchX;
+    }
+}, {passive:true});
+
+// Buttons
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+</script>
+</body>
+</html>
